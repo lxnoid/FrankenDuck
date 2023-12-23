@@ -62,6 +62,6 @@ char ssd1306_WriteString(char* str, FontDef Font, SSD1306_COLOR color);
 void ssd1306_SetCursor(uint8_t x, uint8_t y);
 void ssd1306_dim(uint8_t is_dim);
 
-static void ssd1306_WriteCommand(uint8_t command);
+//static void ssd1306_WriteCommand(uint8_t command);
 
 #endif

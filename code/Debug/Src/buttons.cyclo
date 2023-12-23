@@ -1,0 +1,6 @@
+../Src/buttons.c:10:6:mark_as_pressed	1
+../Src/buttons.c:16:6:mark_as_released	1
+../Src/buttons.c:22:9:is_pressed	3
+../Src/buttons.c:27:9:is_released_but_not_serviced	3
+../Src/buttons.c:32:6:service_press	1
+../Src/buttons.c:37:6:keyboard_update	7

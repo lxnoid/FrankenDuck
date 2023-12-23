@@ -1,0 +1,9 @@
+../Src/ssd1306.c:44:13:ssd1306_WriteCommand	32	static
+../Src/ssd1306.c:50:6:ssd1306_dim	16	static
+../Src/ssd1306.c:72:9:ssd1306_Init	8	static
+../Src/ssd1306.c:126:6:ssd1306_Fill	24	static
+../Src/ssd1306.c:140:6:ssd1306_UpdateScreen	32	static
+../Src/ssd1306.c:162:6:ssd1306_DrawPixel	24	static
+../Src/ssd1306.c:194:6:ssd1306_WriteChar	48	static
+../Src/ssd1306.c:236:6:ssd1306_WriteString	24	static
+../Src/ssd1306.c:258:6:ssd1306_SetCursor	16	static

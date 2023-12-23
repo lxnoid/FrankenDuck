@@ -1,0 +1,14 @@
+../Src/keyboard.c:285:6:keyboard_release_all	8	static
+../Src/keyboard.c:292:9:is_mouse_type	16	static
+../Src/keyboard.c:297:6:media_key_release	8	static
+../Src/keyboard.c:304:6:media_key_press	16	static
+../Src/keyboard.c:312:9:should_use_mod	16	static
+../Src/keyboard.c:327:6:mouse_press	16	static
+../Src/keyboard.c:348:6:mouse_release	16	static
+../Src/keyboard.c:367:6:chromebook	16	static
+../Src/keyboard.c:372:6:keyboard_press	24	static
+../Src/keyboard.c:430:6:keyboard_release	24	static
+../Src/keyboard.c:482:9:utf8ascii	24	static
+../Src/keyboard.c:503:6:kb_print_char	32	static
+../Src/keyboard.c:566:6:kb_print	40	static
+../Src/keyboard.c:579:6:init_my_key	16	static

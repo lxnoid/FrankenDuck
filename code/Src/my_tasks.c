@@ -764,10 +764,11 @@ void handle_hid_command(void)
   */
   else if(command_type == HID_COMMAND_READ_FILE)
   {
+	uint8_t count = 0;
     if(f_open(&sd_file, hid_rx_buf+3, FA_READ) != 0)
       goto hid_read_file_end;
 
-    uint8_t count = 0;
+
     while(1)
     {
       hid_rx_has_unprocessed_data = 0;

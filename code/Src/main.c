@@ -1,28 +1,58 @@
-/* USER CODE BEGIN Header */
+
 /**
   ******************************************************************************
   * @file           : main.c
   * @brief          : Main program body
   ******************************************************************************
-  * @attention
+  * This notice applies to any and all portions of this file
+  * that are not between comment pairs USER CODE BEGIN and
+  * USER CODE END. Other portions of this file, whether 
+  * inserted by the user or by software development tools
+  * are owned by their respective copyright owners.
   *
-  * Copyright (c) 2023 STMicroelectronics.
+  * Copyright (c) 2021 STMicroelectronics International N.V. 
   * All rights reserved.
   *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
+  * Redistribution and use in source and binary forms, with or without 
+  * modification, are permitted, provided that the following conditions are met:
+  *
+  * 1. Redistribution of source code must retain the above copyright notice, 
+  *    this list of conditions and the following disclaimer.
+  * 2. Redistributions in binary form must reproduce the above copyright notice,
+  *    this list of conditions and the following disclaimer in the documentation
+  *    and/or other materials provided with the distribution.
+  * 3. Neither the name of STMicroelectronics nor the names of other 
+  *    contributors to this software may be used to endorse or promote products 
+  *    derived from this software without specific written permission.
+  * 4. This software, including modifications and/or derivative works of this 
+  *    software, must execute solely and exclusively on microcontroller or
+  *    microprocessor devices manufactured by or for STMicroelectronics.
+  * 5. Redistribution and use of this software other than as permitted under 
+  *    this license is void and will automatically terminate your rights under 
+  *    this license. 
+  *
+  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS" 
+  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT 
+  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+  * PARTICULAR PURPOSE AND NON-INFRINGEMENT OF THIRD PARTY INTELLECTUAL PROPERTY
+  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT 
+  * SHALL STMICROELECTRONICS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, 
+  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
+  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stm32f0xx_hal.h"
 #include "cmsis_os.h"
 #include "fatfs.h"
 #include "usb_device.h"
 
-/* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <string.h>
@@ -40,21 +70,6 @@
 
 /* USER CODE END Includes */
 
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
 
@@ -65,13 +80,82 @@ SPI_HandleTypeDef hspi1;
 UART_HandleTypeDef huart1;
 
 osThreadId kb_scanHandle;
+
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-uint8_t fw_version_major = 0;
-uint8_t fw_version_minor = 19;
-uint8_t fw_version_patch = 3;
+
+/*
+0.20.3 20221031
+changed HOLD to EMUK
+
+0.20.4 20221114
+add JIS keys
+
+0.21.0 20221117
+changed USB HID descriptor so new japanese keys work
+
+0.21.1 20221221
+cleaned up animation code
+tried out no animation at all, frees up about 1K of ram
+
+0.21.2
+massive overhaul to reduce RAM and ROM usage
+using hashed lookup for string matching
+new keymap select screen
+reduced RTOS heap usage
+cleaned up animation, much faster
+no functional changes
+mouse button not implemented yet
+
+0.22.0 20230111
+added mouse commands back
+ready for public release
+
+0.22.1 20230118
+fixed a bug where STRING prints an extra space
+
+1.0.0 20230202
+beta release for duckyscript 3
+
+1.1.0 20230214
+added banked loading for large dsb files
+cleaned up opcode values
+
+1.1.1 20230215
+fixed a bug where screen doesnt update when exiting keymap selection screen
+
+1.1.2 20230221
+added busy state
+
+1.1.3 20230329
+fixing a rand() bug where modulus power of 2 result in repeating patterns
+
+1.1.4 20230409
+fixed a SD card timing bug
+
+1.2.0 20230502
+ready for public release
+
+1.2.1 20230630
+fixed laggy EMUK
+fixed EMUK-related n-key rollover bug
+fixed pad crashing when changing profiles
+
+1.3.0 20230701
+added _TIME_S read-only variable
+
+1.3.1
+20231111
+increased max profiles to 64
+change MAX_PROFILES in parser.h
+change BIN_BUF_SIZE in ds3_vm.c if out of space
+*/
+
+uint8_t fw_version_major = 1;
+uint8_t fw_version_minor = 3;
+uint8_t fw_version_patch = 1;
 char instruction[] = "For instructions, see";
-uint8_t fw_version_major_fd = 1;
+uint8_t fw_version_major_fd = 2;
 uint8_t startup = 0;
 /* USER CODE END PV */
 
@@ -83,13 +167,11 @@ static void MX_SPI1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_IWDG_Init(void);
 void kb_scan_task(void const * argument);
-
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
 /* USER CODE END PFP */
 
-/* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 int fputc(int ch, FILE *f)
 {
@@ -100,7 +182,8 @@ int fputc(int ch, FILE *f)
 
 /**
   * @brief  The application entry point.
-  * @retval int
+  *
+  * @retval None
   */
 int main(void)
 {
@@ -108,7 +191,7 @@ int main(void)
 
   /* USER CODE END 1 */
 
-  /* MCU Configuration--------------------------------------------------------*/
+  /* MCU Configuration----------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
@@ -128,13 +211,12 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   MX_SPI1_Init();
-  MX_FATFS_Init();
   MX_I2C1_Init();
   MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
   printf("duckypad V2\ndekuNukem 2020\n");
 	#ifdef FRANKENDUCK
-		printf("Frankenduck V2\nPiTronica 2021\n");
+		printf("Frankenduck V2\nNothing'24\n");
 	#endif
   /* USER CODE END 2 */
 
@@ -164,24 +246,29 @@ int main(void)
   // kb_scan_task should have 256 byte
   osThreadDef(keypress_task, keypress_task_start, osPriorityAboveNormal, 0, 512);
   osThreadCreate(osThread(keypress_task), NULL);
-  osThreadDef(animation_task, animation_task_start, osPriorityBelowNormal, 0, 256);
-  osThreadCreate(osThread(animation_task), NULL);
   /* USER CODE END RTOS_THREADS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  /* USER CODE END RTOS_QUEUES */
+ 
 
   /* Start scheduler */
   osKernelStart();
-
+  
   /* We should never get here as control is now taken by the scheduler */
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   
   while (1)
   {
-    /* USER CODE END WHILE */
+  /* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
+  /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
+
 }
 
 /**
@@ -190,30 +277,30 @@ int main(void)
   */
 void SystemClock_Config(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+  RCC_OscInitTypeDef RCC_OscInitStruct;
+  RCC_ClkInitTypeDef RCC_ClkInitStruct;
+  RCC_PeriphCLKInitTypeDef PeriphClkInit;
+
+    /**Initializes the CPU, AHB and APB busses clocks 
+    */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSI48
                               |RCC_OSCILLATORTYPE_LSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.HSICalibrationValue = 16;
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL5;
-  RCC_OscInitStruct.PLL.PREDIV = RCC_PREDIV_DIV1;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL14;
+  RCC_OscInitStruct.PLL.PREDIV = RCC_PREDIV_DIV3;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
+    /**Initializes the CPU, AHB and APB busses clocks 
+    */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
@@ -222,35 +309,36 @@ void SystemClock_Config(void)
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
+
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB|RCC_PERIPHCLK_USART1
                               |RCC_PERIPHCLK_I2C1;
-  PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK1;
+  PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_SYSCLK;
   PeriphClkInit.I2c1ClockSelection = RCC_I2C1CLKSOURCE_HSI;
   PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
 
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
+
+    /**Configure the Systick interrupt time 
+    */
+  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
+
+    /**Configure the Systick 
+    */
+  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+
+  /* SysTick_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(SysTick_IRQn, 3, 0);
 }
 
-/**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
+/* I2C1 init function */
 static void MX_I2C1_Init(void)
 {
 
-  /* USER CODE BEGIN I2C1_Init 0 */
-
-  /* USER CODE END I2C1_Init 0 */
-
-  /* USER CODE BEGIN I2C1_Init 1 */
-
-  /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
   hi2c1.Init.Timing = 0x0000020B;
   hi2c1.Init.OwnAddress1 = 0;
@@ -262,72 +350,44 @@ static void MX_I2C1_Init(void)
   hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
   if (HAL_I2C_Init(&hi2c1) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
-  /** Configure Analogue filter
-  */
+    /**Configure Analogue filter 
+    */
   if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
 
-  /** Configure Digital filter
-  */
+    /**Configure Digital filter 
+    */
   if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
-  /* USER CODE BEGIN I2C1_Init 2 */
-
-  /* USER CODE END I2C1_Init 2 */
 
 }
 
-/**
-  * @brief IWDG Initialization Function
-  * @param None
-  * @retval None
-  */
+/* IWDG init function */
 static void MX_IWDG_Init(void)
 {
 
-  /* USER CODE BEGIN IWDG_Init 0 */
-
-  /* USER CODE END IWDG_Init 0 */
-
-  /* USER CODE BEGIN IWDG_Init 1 */
-
-  /* USER CODE END IWDG_Init 1 */
   hiwdg.Instance = IWDG;
   hiwdg.Init.Prescaler = IWDG_PRESCALER_32;
   hiwdg.Init.Window = 4095;
   hiwdg.Init.Reload = 4095;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
-  /* USER CODE BEGIN IWDG_Init 2 */
-
-  /* USER CODE END IWDG_Init 2 */
 
 }
 
-/**
-  * @brief SPI1 Initialization Function
-  * @param None
-  * @retval None
-  */
+/* SPI1 init function */
 static void MX_SPI1_Init(void)
 {
 
-  /* USER CODE BEGIN SPI1_Init 0 */
-
-  /* USER CODE END SPI1_Init 0 */
-
-  /* USER CODE BEGIN SPI1_Init 1 */
-
-  /* USER CODE END SPI1_Init 1 */
   /* SPI1 parameter configuration*/
   hspi1.Instance = SPI1;
   hspi1.Init.Mode = SPI_MODE_MASTER;
@@ -345,29 +405,15 @@ static void MX_SPI1_Init(void)
   hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
   if (HAL_SPI_Init(&hspi1) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
-  /* USER CODE BEGIN SPI1_Init 2 */
-
-  /* USER CODE END SPI1_Init 2 */
 
 }
 
-/**
-  * @brief USART1 Initialization Function
-  * @param None
-  * @retval None
-  */
+/* USART1 init function */
 static void MX_USART1_UART_Init(void)
 {
 
-  /* USER CODE BEGIN USART1_Init 0 */
-
-  /* USER CODE END USART1_Init 0 */
-
-  /* USER CODE BEGIN USART1_Init 1 */
-
-  /* USER CODE END USART1_Init 1 */
   huart1.Instance = USART1;
   huart1.Init.BaudRate = 115200;
   huart1.Init.WordLength = UART_WORDLENGTH_8B;
@@ -380,24 +426,22 @@ static void MX_USART1_UART_Init(void)
   huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
   if (HAL_HalfDuplex_Init(&huart1) != HAL_OK)
   {
-    Error_Handler();
+    _Error_Handler(__FILE__, __LINE__);
   }
-  /* USER CODE BEGIN USART1_Init 2 */
-
-  /* USER CODE END USART1_Init 2 */
 
 }
 
-/**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+/** Configure pins as 
+        * Analog 
+        * Input 
+        * Output
+        * EVENT_OUT
+        * EXTI
+*/
 static void MX_GPIO_Init(void)
 {
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+
+  GPIO_InitTypeDef GPIO_InitStruct;
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -449,9 +493,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(SD_CS_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : SW1_Pin SW2_Pin SW3_Pin SW6_Pin
+  /*Configure GPIO pins : SW1_Pin SW2_Pin SW3_Pin SW6_Pin 
                            SW7_Pin SW8_Pin SW9_Pin SW10_Pin */
-  GPIO_InitStruct.Pin = SW1_Pin|SW2_Pin|SW3_Pin|SW6_Pin
+  GPIO_InitStruct.Pin = SW1_Pin|SW2_Pin|SW3_Pin|SW6_Pin 
                           |SW7_Pin|SW8_Pin|SW9_Pin|SW10_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
@@ -461,8 +505,6 @@ static void MX_GPIO_Init(void)
   HAL_NVIC_SetPriority(EXTI4_15_IRQn, 3, 0);
   HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -471,6 +513,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   HAL_Delay(200);
   NVIC_SystemReset();
 }
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_kb_scan_task */
@@ -482,11 +525,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 /* USER CODE END Header_kb_scan_task */
 void kb_scan_task(void const * argument)
 {
+  /* init code for FATFS */
+  MX_FATFS_Init();
+
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
+
   /* USER CODE BEGIN 5 */
   neopixel_off();
-  mount_result = f_mount(&sd_fs, "", 1);
+  uint8_t mount_result = f_mount(&sd_fs, "", 1);
   HAL_GPIO_WritePin(OLED_RESET_GPIO_Port, OLED_RESET_Pin, GPIO_PIN_RESET);
   osDelay(10);
   HAL_GPIO_WritePin(OLED_RESET_GPIO_Port, OLED_RESET_Pin, GPIO_PIN_SET);
@@ -500,14 +547,14 @@ void kb_scan_task(void const * argument)
 		startup = 1;
 		ssd1306_Fill(Black);
 		ssd1306_SetCursor(18,5);		
-    ssd1306_WriteString("The FrankenDuck",Font_6x10,White);
+    ssd1306_WriteString("The NothingDuck",Font_6x10,White);
 		
     memset(temp_buf, 0, PATH_SIZE);
     sprintf(temp_buf, "FW V%d.%d.%d", fw_version_major_fd, fw_version_minor, fw_version_patch);
     ssd1306_SetCursor(35, 52);
     ssd1306_WriteString(temp_buf,Font_6x10,White);
 		ssd1306_SetCursor(5,40);
-		ssd1306_WriteString("PiTronica 2021",Font_6x10,White);
+		ssd1306_WriteString("NothingRuns'24",Font_6x10,White);
     ssd1306_SetCursor(5, 25);
     ssd1306_WriteString("A DuckyPad Derivative",Font_6x10,White);
     ssd1306_UpdateScreen();
@@ -533,7 +580,7 @@ void kb_scan_task(void const * argument)
 
     ssd1306_SetCursor(0, 22);
     ssd1306_WriteString(instruction,Font_6x10,White);
-    ssd1306_SetCursor(18, 35);
+    ssd1306_SetCursor(24, 35);
     ssd1306_WriteString(project_url,Font_6x10,White);
     ssd1306_UpdateScreen();
     while(1)
@@ -550,17 +597,20 @@ void kb_scan_task(void const * argument)
   if(last_profile == 0)
     change_profile(NEXT_PROFILE);
   else
-    restore_profile(last_profile, 1, 1);
+    restore_profile(last_profile);
   
   init_complete = 1;
   /* Infinite loop */
+  printf("fhs: %u\n", xPortGetFreeHeapSize());
+  anime_init();
   for(;;)
   {
     HAL_IWDG_Refresh(&hiwdg);
     keyboard_update();
+    animation_task_start();
     osDelay(16);
   }
-  /* USER CODE END 5 */
+  /* USER CODE END 5 */ 
 }
 
 /**
@@ -586,9 +636,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 /**
   * @brief  This function is executed in case of error occurrence.
+  * @param  file: The file name as string.
+  * @param  line: The line in file as a number.
   * @retval None
   */
-void Error_Handler(void)
+void _Error_Handler(char *file, int line)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
@@ -606,11 +658,21 @@ void Error_Handler(void)
   * @param  line: assert_param error line source number
   * @retval None
   */
-void assert_failed(uint8_t *file, uint32_t line)
-{
+void assert_failed(uint8_t* file, uint32_t line)
+{ 
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
+
+/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

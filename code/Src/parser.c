@@ -8,6 +8,7 @@
 #include "keyboard.h"
 #include "animations.h"
 #include "usbd_desc.h"
+#include "ds3_vm.h"
 
 uint8_t pf_name_cache[MAX_PROFILES][PF_CACHE_FILENAME_MAXLEN];
 
@@ -21,86 +22,24 @@ static const uint8_t col_lookup[7][3] = {
    {0, 42, 85}
 };
 
-static const uint8_t f_key_lookup[24] = {0X3A, 0X3B, 0X3C, 0X3D, 0X3E, 0X3F, 0X40, 0X41, 0X42, 0X43, 0X44, 0X45, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f, 0x70, 0x71, 0x72, 0x73};
-
 FRESULT sd_fresult;
 FATFS sd_fs;
 FIL sd_file;
 DIR dir;
 FILINFO fno;
-uint8_t mount_result;
-uint8_t has_valid_profiles;
-int32_t cmd_delay, char_delay, cmd_delay_fuzz, char_delay_fuzz;
 unsigned int bytes_read;
-duckypad_parsed_command my_dpc;
 char temp_buf[PATH_SIZE];
 char lfn_buf[FILENAME_SIZE];
-char key_name_buf[FILENAME_SIZE];
 char read_buffer[READ_BUF_SIZE];
-char prev_line[READ_BUF_SIZE];
 char nonexistent_keyname[] = "\253";
 profile_cache p_cache;
 dp_global_settings dp_settings;
 my_key hold_cache[MAPPABLE_KEY_COUNT];
-my_key hold_cach2[MAPPABLE_KEY_COUNT];
-char curr_kb_layout[FILENAME_SIZE] = "default";
-uint8_t key_max_loop[MAPPABLE_KEY_COUNT];
+uint8_t emuk_state[MAPPABLE_KEY_COUNT];
+char curr_kb_layout[FILENAME_SIZE];
 uint8_t key_press_count[MAPPABLE_KEY_COUNT];
 
-char project_url[] = "git.io/duckypad";
-const char cmd_REPEAT[] = "REPEAT ";
-const char cmd_REM[] = "REM ";
-const char cmd_DEFAULTDELAY[] = "DEFAULTDELAY ";
-const char cmd_DEFAULT_DELAY[] = "DEFAULT_DELAY ";
-const char cmd_DEFAULTCHARDELAY[] = "DEFAULTCHARDELAY ";
-const char cmd_DEFAULTDELAYFUZZ[] = "DEFAULTDELAYFUZZ ";
-const char cmd_DEFAULTCHARDELAYFUZZ[] = "DEFAULTCHARDELAYFUZZ ";
-const char cmd_DELAY[] = "DELAY ";
-const char cmd_STRING[] = "STRING ";
-const char cmd_UARTPRINT[] = "UARTPRINT ";
-const char cmd_ESCAPE[] = "ESCAPE";
-const char cmd_ESC[] = "ESC";
-const char cmd_ENTER[] = "ENTER";
-const char cmd_UP[] = "UP";
-const char cmd_DOWN[] = "DOWN";
-const char cmd_LEFT[] = "LEFT";
-const char cmd_RIGHT[] = "RIGHT";
-const char cmd_UPARROW[] = "UPARROW";
-const char cmd_DOWNARROW[] = "DOWNARROW";
-const char cmd_LEFTARROW[] = "LEFTARROW";
-const char cmd_RIGHTARROW[] = "RIGHTARROW";
-const char cmd_BACKSPACE[] = "BACKSPACE";
-const char cmd_TAB[] = "TAB";
-const char cmd_CAPSLOCK[] = "CAPSLOCK";
-const char cmd_PRINTSCREEN[] = "PRINTSCREEN";
-const char cmd_SCROLLLOCK[] = "SCROLLLOCK";
-const char cmd_PAUSE[] = "PAUSE";
-const char cmd_BREAK[] = "BREAK";
-const char cmd_INSERT[] = "INSERT";
-const char cmd_HOME[] = "HOME";
-const char cmd_PAGEUP[] = "PAGEUP";
-const char cmd_PAGEDOWN[] = "PAGEDOWN";
-const char cmd_DELETE[] = "DELETE";
-const char cmd_END[] = "END";
-const char cmd_SPACE[] = "SPACE";
-
-const char cmd_SHIFT[] = "SHIFT";
-const char cmd_RSHIFT[] = "RSHIFT";
-
-const char cmd_ALT[] = "ALT";
-const char cmd_RALT[] = "RALT";
-const char cmd_OPTION[] = "OPTION";
-const char cmd_ROPTION[] = "ROPTION";
-
-const char cmd_GUI[] = "GUI";
-const char cmd_WINDOWS[] = "WINDOWS";
-const char cmd_COMMAND[] = "COMMAND";
-const char cmd_RWINDOWS[] = "RWINDOWS";
-const char cmd_RCOMMAND[] = "RCOMMAND";
-
-const char cmd_CONTROL[] = "CONTROL";
-const char cmd_CTRL[] = "CTRL";
-const char cmd_RCTRL[] = "RCTRL";
+char project_url[] = "duckyPad.com";
 
 const char cmd_BG_COLOR[] = "BG_COLOR ";
 const char cmd_KD_COLOR[] = "KEYDOWN_COLOR ";
@@ -108,67 +47,9 @@ const char cmd_SWCOLOR[] = "SWCOLOR_";
 const char cmd_SW_SELF_COLOR[] = "SWCOLOR ";
 const char cmd_DIM_UNUSED_KEYS[] = "DIM_UNUSED_KEYS ";
 
-const char cmd_NUMLOCK[] = "NUMLOCK"; // Keyboard Num Lock and Clear
-const char cmd_KPSLASH[] = "KP_SLASH"; // Keypad /
-const char cmd_KPASTERISK[] = "KP_ASTERISK"; // Keypad *
-const char cmd_KPMINUS[] = "KP_MINUS"; // Keypad -
-const char cmd_KPPLUS[] = "KP_PLUS"; // Keypad +
-const char cmd_KPENTER[] = "KP_ENTER"; // Keypad ENTER
-const char cmd_KP1[] = "KP_1"; // Keypad 1 and End
-const char cmd_KP2[] = "KP_2"; // Keypad 2 and Down Arrow
-const char cmd_KP3[] = "KP_3"; // Keypad 3 and PageDn
-const char cmd_KP4[] = "KP_4"; // Keypad 4 and Left Arrow
-const char cmd_KP5[] = "KP_5"; // Keypad 5
-const char cmd_KP6[] = "KP_6"; // Keypad 6 and Right Arrow
-const char cmd_KP7[] = "KP_7"; // Keypad 7 and Home
-const char cmd_KP8[] = "KP_8"; // Keypad 8 and Up Arrow
-const char cmd_KP9[] = "KP_9"; // Keypad 9 and Page Up
-const char cmd_KP0[] = "KP_0"; // Keypad 0 and Insert
-const char cmd_KPDOT[] = "KP_DOT"; // Keypad . and Delete
-const char cmd_KPEQUAL[] = "KP_EQUAL"; // Keypad EQUAL
-
-const char cmd_MK_VOLUP[] = "MK_VOLUP";
-const char cmd_MK_VOLDOWN[] = "MK_VOLDOWN";
-const char cmd_MK_VOLMUTE[] = "MK_MUTE";
-const char cmd_MK_PREV[] = "MK_PREV";
-const char cmd_MK_NEXT[] = "MK_NEXT";
-const char cmd_MK_PLAYPAUSE[] = "MK_PP";
-const char cmd_MK_STOP[] = "MK_STOP";
-
-const char cmd_MENU[] = "MENU";
-const char cmd_APP[] = "APP";
-const char cmd_HOLD[] = "HOLD ";
-const char cmd_POWER[] = "POWER";
-
-const char cmd_LOOP[] = "LOOP";
-const char cmd_LCR[] = "LCR"; // loop counter reset
-
-const char cmd_SLEEP[] = "DP_SLEEP";
-const char cmd_PREV_PROFILE[] = "PREV_PROFILE";
-const char cmd_NEXT_PROFILE[] = "NEXT_PROFILE";
-const char cmd_GOTO_PROFILE[] = "GOTO_PROFILE";
-
-const char cmd_LMOUSE[] = "LMOUSE";
-const char cmd_RMOUSE[] = "RMOUSE";
-const char cmd_MMOUSE[] = "MMOUSE";
-const char cmd_MOUSE_MOVE[] = "MOUSE_MOVE ";
-const char cmd_MOUSE_WHEEL[] = "MOUSE_WHEEL ";
-
-const char cmd_KEYDOWN[] = "KEYDOWN ";
-const char cmd_KEYUP[] = "KEYUP ";
-
-int32_t make_fuzz(int32_t amount, int32_t fuzz)
-{
-  if(fuzz == 0)
-    return amount;
-  return amount + rand() % fuzz;
-}
-
 void delay_wrapper(int32_t amount, int32_t fuzz)
 {
-  int32_t sss = make_fuzz(amount, fuzz);
-  // printf("z %d %d %d\n", amount, fuzz, sss);
-  osDelay(sss);
+  osDelay(fuzz == 0 ? amount : amount + rand() % fuzz);
 }
 
 char* goto_next_arg(char* buf, char* buf_end)
@@ -353,24 +234,6 @@ uint8_t load_colors(char* pf_fn)
   return ret;
 }
 
-void list_profiles(uint8_t page)
-{
-  uint8_t p_start = page*MAPPABLE_KEY_COUNT;
-  uint8_t p_end = p_start + MAPPABLE_KEY_COUNT;
-  // uint32_t time = HAL_GetTick();
-  memset(temp_buf, 0, PATH_SIZE);
-  sprintf(temp_buf, "Profile %d - %d", p_start+1, p_end);
-  temp_buf[21] = 0;
-  ssd1306_Fill(Black);
-  ssd1306_SetCursor((21 - strlen(temp_buf)) * 3, 0);
-  ssd1306_WriteString(temp_buf, Font_6x10,White);
-  for (uint8_t i = p_start; i < p_end; ++i)
-    if(i < MAX_PROFILES)
-      print_keyname(pf_name_cache[i], i - p_start, 0, 0);
-  ssd1306_UpdateScreen();
-  // printf("took %dms\n", HAL_GetTick() - time);
-}
-
 uint8_t how_many_digits(uint8_t number)
 {
   if(number >= 100)
@@ -418,6 +281,38 @@ void scan_profiles(void)
   f_closedir(&dir);
 }
 
+uint16_t djb2(uint8_t *str, uint8_t len)
+{
+    uint32_t hash = 5381;
+    uint8_t *end = str + len;
+    uint8_t c;
+    while ((c = *str++) && (str <= end))
+      hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+    return (uint16_t)hash;
+}
+
+char* get_nonspace_arg_len(char* buf, uint8_t *len)
+{
+  if(buf == NULL)
+    return NULL;
+  while(*buf != 0 && *buf == ' ')
+    buf++;
+  // now buf points to the start of first non-whitespace character
+  char* space_ptr = strchr(buf, ' ');
+  if(space_ptr == NULL)
+    *len = strlen(buf);
+  else
+    *len = space_ptr - buf;
+  return buf;
+}
+
+uint16_t get_hash_at_first_nonspace_word(char* msg)
+{
+  uint8_t kw_len = 0;
+  char* arg_start = get_nonspace_arg_len(msg, &kw_len);
+  return djb2(arg_start, kw_len);
+}
+
 void strip_newline(char* line, uint8_t size)
 {
   for(int i = 0; i < size; ++i)
@@ -425,23 +320,23 @@ void strip_newline(char* line, uint8_t size)
       line[i] = 0;
 }
 
-uint8_t get_keynames(profile_cache* ppppppp)
+uint8_t get_keynames(profile_cache* pcache)
 {
   uint8_t ret = 1;
   uint8_t this_key_index;
-  if(ppppppp == NULL)
+  if(pcache == NULL)
     return ret;
   memset(temp_buf, 0, PATH_SIZE);
-  sprintf(temp_buf, "/%s/config.txt", ppppppp->profile_fn);
+  sprintf(temp_buf, "/%s/config.txt", pcache->profile_fn);
 
   for (int i = 0; i < MAPPABLE_KEY_COUNT; ++i)
   {
-    memset(ppppppp->key_fn[i], 0, FILENAME_SIZE);
-    strcpy(ppppppp->key_fn[i], nonexistent_keyname);
+    memset(pcache->key_fn[i], 0, KEYNAME_SIZE);
+    strcpy(pcache->key_fn[i], nonexistent_keyname);
   }
 
   if(f_open(&sd_file, temp_buf, FA_READ) != 0)
-    goto glk_end;
+    goto gkn_end;
   
   while(f_gets(temp_buf, PATH_SIZE, &sd_file))
   {
@@ -451,29 +346,45 @@ uint8_t get_keynames(profile_cache* ppppppp)
       if(this_key_index == 0)
         continue;
       this_key_index--;
-      memset(ppppppp->key_fn[this_key_index], 0, FILENAME_SIZE);
+      memset(pcache->key_fn[this_key_index], 0, KEYNAME_SIZE);
       strip_newline(temp_buf, PATH_SIZE);
-      strcpy(ppppppp->key_fn[this_key_index], goto_next_arg(temp_buf, temp_buf+PATH_SIZE));
-  }
-  if(temp_buf[0] == 's')
-    {
-      this_key_index = atoi(temp_buf+1);
-      if(this_key_index == 0)
-        continue;
-      this_key_index--;
-      uint8_t this_key_max_loop = atoi(goto_next_arg(temp_buf, temp_buf+PATH_SIZE));
-      if(this_key_max_loop == 0)
-        continue;
-      key_max_loop[this_key_index] = this_key_max_loop;
+      strcpy(pcache->key_fn[this_key_index], goto_next_arg(temp_buf, temp_buf+PATH_SIZE));
     }
   }
   ret = 0;
-  glk_end:
+  gkn_end:
   f_close(&sd_file);
   return ret;
 }
 
-void load_profile(uint8_t pid, uint8_t reload_colors)
+uint8_t load_persistent_state(void)
+{
+  memset(temp_buf, 0, PATH_SIZE);
+  sprintf(temp_buf, "/%s/state.sps", p_cache.profile_fn);
+  if(f_open(&sd_file, temp_buf, FA_READ) != 0)
+  {
+    memset(key_press_count, 0, MAPPABLE_KEY_COUNT);
+    f_close(&sd_file);
+    return 1;
+  }
+  memset(read_buffer, 0, READ_BUF_SIZE);
+  f_read(&sd_file, read_buffer, READ_BUF_SIZE, &bytes_read);
+  f_close(&sd_file);
+  memcpy(key_press_count, read_buffer, MAPPABLE_KEY_COUNT);
+
+  for (int i = 0; i < MAPPABLE_KEY_COUNT; ++i)
+  {
+    uint8_t r_addr = i*3 + COLOR_START_ADDR;
+    uint8_t red = read_buffer[r_addr];
+    uint8_t green = read_buffer[r_addr+1];
+    uint8_t blue = read_buffer[r_addr+2];
+    set_pixel_3color_update_buffer(i, red, green, blue);
+  }
+  neopixel_update();
+  return 0;
+}
+
+void load_profile(uint8_t pid)
 {
   char* profile_name = find_profile(pid);
   if(profile_name == NULL)
@@ -481,33 +392,33 @@ void load_profile(uint8_t pid, uint8_t reload_colors)
   memset(p_cache.profile_fn, 0, FILENAME_SIZE);
   strcpy(p_cache.profile_fn, profile_name);
   get_keynames(&p_cache);
-  if(reload_colors)
-    load_colors(p_cache.profile_fn);
-  change_bg();
+  load_colors(p_cache.profile_fn);
+  if(load_persistent_state() != 0)
+    redraw_bg();
   p_cache.current_profile = pid;
 }
 
-void print_keyname(char* keyname, uint8_t keynum, int8_t x_offset, int8_t y_offset)
+void print_keyname(char* keyname, uint8_t keynum)
 {
-  memset(key_name_buf, 0, FILENAME_SIZE);
-  strcpy(key_name_buf, keyname);
-  if(key_name_buf[0] == 0 || (key_name_buf[0] == nonexistent_keyname[0] && key_name_buf[1] == 0))
-    key_name_buf[0] = '-';
-  if(strlen(key_name_buf) > 7)
-    key_name_buf[7] = 0;
+  memset(temp_buf, 0, PATH_SIZE);
+  strcpy(temp_buf, keyname);
+  if(temp_buf[0] == 0 || (temp_buf[0] == nonexistent_keyname[0] && temp_buf[1] == 0))
+    temp_buf[0] = '-';
+  if(strlen(temp_buf) > 7)
+    temp_buf[7] = 0;
   uint8_t row = keynum / 3;
   uint8_t col = keynum - row * 3;
-  int8_t x_start = col_lookup[strlen(key_name_buf) - 1][col] + x_offset;
-  int8_t y_start = (row + 1) * 10 + 2 + y_offset;
+  int8_t x_start = col_lookup[strlen(temp_buf) - 1][col];
+  int8_t y_start = (row + 1) * 10 + 2;
   if(x_start < 0)
     x_start = 0;
   if(y_start < 0)
     y_start = 0;
   ssd1306_SetCursor((uint8_t)x_start, (uint8_t)y_start);
-  ssd1306_WriteString(key_name_buf, Font_6x10,White);
+  ssd1306_WriteString(temp_buf, Font_6x10,White);
 }
 
-void print_legend(int8_t x_offset, int8_t y_offset)
+void print_legend(void)
 {
   ssd1306_Fill(Black);
   memset(temp_buf, 0, PATH_SIZE);
@@ -517,15 +428,13 @@ void print_legend(int8_t x_offset, int8_t y_offset)
   sprintf(temp_buf, "P%d: %s", p_cache.current_profile, pf_name);
   if(strlen(temp_buf) > 21)
     temp_buf[21] = 0;
-  int8_t x_start = (21 - strlen(temp_buf)) * 3 + x_offset;
+  int8_t x_start = (21 - strlen(temp_buf)) * 3;
   if(x_start < 0)
     x_start = 0;
-  if(y_offset < 0)
-    y_offset = 0;
   ssd1306_SetCursor((uint8_t)x_start, 0);
   ssd1306_WriteString(temp_buf, Font_6x10,White);
   for (int i = 0; i < MAPPABLE_KEY_COUNT; ++i)
-    print_keyname(p_cache.key_fn[i], i, x_offset, y_offset);
+    print_keyname(p_cache.key_fn[i], i);
   ssd1306_UpdateScreen();
 }
 
@@ -596,30 +505,22 @@ void load_settings(void)
   }
   ggs_end:
   f_close(&sd_file);
-	save_settings();
 }
 
 void reset_hold_cache(void)
 {
   for (int i = 0; i < MAPPABLE_KEY_COUNT; ++i)
   {
-    hold_cache[i].key_type = KEY_TYPE_UNKNOWN;
+    hold_cache[i].type = KEY_TYPE_UNKNOWN;
     hold_cache[i].code = 0;
-    hold_cach2[i].key_type = KEY_TYPE_UNKNOWN;
-    hold_cach2[i].code = 0;
   }
+  memset(emuk_state, 0, MAPPABLE_KEY_COUNT);
 }
 
-void restore_profile(uint8_t profile_id, uint8_t reset_loop_count, uint8_t reload_colors)
+void restore_profile(uint8_t profile_id)
 {
-  if(reset_loop_count)
-    memset(key_press_count, 0, MAPPABLE_KEY_COUNT);
-  memset(key_max_loop, 0, MAPPABLE_KEY_COUNT);
-  load_profile(profile_id, reload_colors);
-  print_legend(0, 0);
-  has_valid_profiles = 1;
-  f_closedir(&dir);
-  f_close(&sd_file);
+  load_profile(profile_id);
+  print_legend();
   save_last_profile(profile_id);
   reset_hold_cache();
 }
@@ -649,825 +550,99 @@ void change_profile(uint8_t direction)
   while(1)
   {
     if(direction == NEXT_PROFILE)
-      next_profile = next_profile + 1 > MAX_PROFILES - 1 ? 0 : next_profile + 1;
+    {
+      next_profile = next_profile + 1;
+      if(next_profile >= MAX_PROFILES)
+       next_profile = 1;
+    }
     else
-      next_profile = next_profile - 1 > MAX_PROFILES - 1 ? MAX_PROFILES - 1 : next_profile - 1;
+    {
+      next_profile = next_profile - 1;
+      if(next_profile == 0)
+        next_profile = MAX_PROFILES - 1;
+    }
     if(p_cache.available_profile[next_profile])
       break;
   }
-  restore_profile(next_profile, 1, 1);
+  restore_profile(next_profile);
 }
 
-void parse_special_key(char* msg, my_key* this_key)
+void der_init(ds3_exe_result* der)
 {
-  if(msg == NULL || this_key == NULL)
-    return;
- 
-  this_key->key_type = KEY_TYPE_SPECIAL;
-  if(strncmp(msg, cmd_UP, strlen(cmd_UP)) == 0)
-  {
-    this_key->code = KEY_UP_ARROW;
-    return;
-  }
-  else if(strncmp(msg, cmd_DOWN, strlen(cmd_DOWN)) == 0)
-  {
-    this_key->code = KEY_DOWN_ARROW;
-    return;
-  }
-  else if(strncmp(msg, cmd_LEFT, strlen(cmd_LEFT)) == 0)
-  {
-    this_key->code = KEY_LEFT_ARROW;
-    return;
-  }
-  else if(strncmp(msg, cmd_RIGHT, strlen(cmd_RIGHT)) == 0)
-  {
-    this_key->code = KEY_RIGHT_ARROW;
-    return;
-  }
-  else if(strncmp(msg, cmd_UPARROW, strlen(cmd_UPARROW)) == 0)
-  {
-    this_key->code = KEY_UP_ARROW;
-    return;
-  }
-  else if(strncmp(msg, cmd_DOWNARROW, strlen(cmd_DOWNARROW)) == 0)
-  {
-    this_key->code = KEY_DOWN_ARROW;
-    return;
-  }
-  else if(strncmp(msg, cmd_LEFTARROW, strlen(cmd_LEFTARROW)) == 0)
-  {
-    this_key->code = KEY_LEFT_ARROW;
-    return;
-  }
-  else if(strncmp(msg, cmd_RIGHTARROW, strlen(cmd_RIGHTARROW)) == 0)
-  {
-    this_key->code = KEY_RIGHT_ARROW;
-    return;
-  }
-  else if(strncmp(msg, cmd_ESCAPE, strlen(cmd_ESCAPE)) == 0)
-  {
-    this_key->code = KEY_ESC;
-    return;
-  }
-  else if(strncmp(msg, cmd_ESC, strlen(cmd_ESC)) == 0)
-  {
-    this_key->code = KEY_ESC;
-    return;
-  }
-  else if(strncmp(msg, cmd_ENTER, strlen(cmd_ENTER)) == 0)
-  {
-    this_key->code = KEY_RETURN;
-    return;
-  }
-  else if(strncmp(msg, cmd_BACKSPACE, strlen(cmd_BACKSPACE)) == 0)
-  {
-    this_key->code = KEY_BACKSPACE;
-    return;
-  }
-  else if(strncmp(msg, cmd_TAB, strlen(cmd_TAB)) == 0)
-  {
-    this_key->code = KEY_TAB;
-    return;
-  }
-  else if(strncmp(msg, cmd_CAPSLOCK, strlen(cmd_CAPSLOCK)) == 0)
-  {
-    this_key->code = KEY_CAPS_LOCK;
-    return;
-  }
-  else if(strncmp(msg, cmd_PRINTSCREEN, strlen(cmd_PRINTSCREEN)) == 0)
-  {
-    this_key->code = KEY_PRINT_SCREEN;
-    return;
-  }
-  else if(strncmp(msg, cmd_SCROLLLOCK, strlen(cmd_SCROLLLOCK)) == 0)
-  {
-    this_key->code = KEY_SCROLL_LOCK;
-    return;
-  }
-  else if(strncmp(msg, cmd_PAUSE, strlen(cmd_PAUSE)) == 0)
-  {
-    this_key->code = KEY_PAUSE;
-    return;
-  }
-  else if(strncmp(msg, cmd_BREAK, strlen(cmd_BREAK)) == 0)
-  {
-    this_key->code = KEY_PAUSE;
-    return;
-  }
-  else if(strncmp(msg, cmd_INSERT, strlen(cmd_INSERT)) == 0)
-  {
-    this_key->code = KEY_INSERT;
-    return;
-  }
-  else if(strncmp(msg, cmd_HOME, strlen(cmd_HOME)) == 0)
-  {
-    this_key->code = KEY_HOME;
-    return;
-  }
-  else if(strncmp(msg, cmd_PAGEUP, strlen(cmd_PAGEUP)) == 0)
-  {
-    this_key->code = KEY_PAGE_UP;
-    return;
-  }
-  else if(strncmp(msg, cmd_PAGEDOWN, strlen(cmd_PAGEDOWN)) == 0)
-  {
-    this_key->code = KEY_PAGE_DOWN;
-    return;
-  }
-  else if(strncmp(msg, cmd_DELETE, strlen(cmd_DELETE)) == 0)
-  {
-    this_key->code = KEY_DELETE;
-    return;
-  }
-  else if(strncmp(msg, cmd_END, strlen(cmd_END)) == 0)
-  {
-    this_key->code = KEY_END;
-    return;
-  }
-
-  else if(strncmp(msg, cmd_NUMLOCK, strlen(cmd_NUMLOCK)) == 0)
-  {
-    this_key->code = KEY_NUMLOCK;
-    return;
-  }
-
-  else if(strncmp(msg, cmd_KPSLASH, strlen(cmd_KPSLASH)) == 0)
-  {
-    this_key->code = KEY_KPSLASH;
-    return;
-  }
-  else if(strncmp(msg, cmd_KPASTERISK, strlen(cmd_KPASTERISK)) == 0)
-  {
-    this_key->code = KEY_KPASTERISK;
-    return;
-  }
-  else if(strncmp(msg, cmd_KPMINUS, strlen(cmd_KPMINUS)) == 0)
-  {
-    this_key->code = KEY_KPMINUS;
-    return;
-  }
-  else if(strncmp(msg, cmd_KPPLUS, strlen(cmd_KPPLUS)) == 0)
-  {
-    this_key->code = KEY_KPPLUS;
-    return;
-  }
-  else if(strncmp(msg, cmd_KPENTER, strlen(cmd_KPENTER)) == 0)
-  {
-    this_key->code = KEY_KPENTER;
-    return;
-  }
-  else if(strncmp(msg, cmd_KP1, strlen(cmd_KP1)) == 0)
-  {
-    this_key->code = KEY_KP1;
-    return;
-  }
-  else if(strncmp(msg, cmd_KP2, strlen(cmd_KP2)) == 0)
-  {
-    this_key->code = KEY_KP2;
-    return;
-  }
-  else if(strncmp(msg, cmd_KP3, strlen(cmd_KP3)) == 0)
-  {
-    this_key->code = KEY_KP3;
-    return;
-  }
-  else if(strncmp(msg, cmd_KP4, strlen(cmd_KP4)) == 0)
-  {
-    this_key->code = KEY_KP4;
-    return;
-  }
-  else if(strncmp(msg, cmd_KP5, strlen(cmd_KP5)) == 0)
-  {
-    this_key->code = KEY_KP5;
-    return;
-  }
-  else if(strncmp(msg, cmd_KP6, strlen(cmd_KP6)) == 0)
-  {
-    this_key->code = KEY_KP6;
-    return;
-  }
-  else if(strncmp(msg, cmd_KP7, strlen(cmd_KP7)) == 0)
-  {
-    this_key->code = KEY_KP7;
-    return;
-  }
-  else if(strncmp(msg, cmd_KP8, strlen(cmd_KP8)) == 0)
-  {
-    this_key->code = KEY_KP8;
-    return;
-  }
-  else if(strncmp(msg, cmd_KP9, strlen(cmd_KP9)) == 0)
-  {
-    this_key->code = KEY_KP9;
-    return;
-  }
-  else if(strncmp(msg, cmd_KP0, strlen(cmd_KP0)) == 0)
-  {
-    this_key->code = KEY_KP0;
-    return;
-  }
-  else if(strncmp(msg, cmd_KPDOT, strlen(cmd_KPDOT)) == 0)
-  {
-    this_key->code = KEY_KPDOT;
-    return;
-  }
-  else if(strncmp(msg, cmd_KPEQUAL, strlen(cmd_KPEQUAL)) == 0)
-  {
-    this_key->code = KEY_KPEQUAL;
-    return;
-  }
-  else if(strncmp(msg, cmd_POWER, strlen(cmd_POWER)) == 0)
-  {
-    this_key->code = KEY_POWER;
-    return;
-  }
-  else if(msg[0] == 'F')
-  {
-    uint8_t f_number = atoi(msg+1);
-    if(f_number == 0 || f_number > 24)
-    {
-      init_my_key(this_key);
-      return;
-    }
-    this_key->code = f_key_lookup[f_number-1];
-    return;
-  }
-  else if(strncmp(msg, cmd_MENU, strlen(cmd_MENU)) == 0)
-  {
-    this_key->code = KEY_MENU;
-    return;
-  }
-  else if(strncmp(msg, cmd_APP, strlen(cmd_APP)) == 0)
-  {
-    this_key->code = KEY_MENU;
-    return;
-  }
-
-// ----------------------------------
-  this_key->key_type = KEY_TYPE_CHAR;
-  if(strncmp(msg, cmd_SPACE, strlen(cmd_SPACE)) == 0)
-  {
-    this_key->code = ' ';
-    return;
-  }
-
-// ----------------------------------
-
-  this_key->key_type = KEY_TYPE_MODIFIER;
-  if(strncmp(msg, cmd_SHIFT, strlen(cmd_SHIFT)) == 0)
-  {
-    this_key->code = KEY_LEFT_SHIFT;
-    return;
-  }
-  if(strncmp(msg, cmd_RSHIFT, strlen(cmd_RSHIFT)) == 0)
-  {
-    this_key->code = KEY_RIGHT_SHIFT;
-    return;
-  }
-  else if((strncmp(msg, cmd_ALT, strlen(cmd_ALT)) == 0) || strncmp(msg, cmd_OPTION, strlen(cmd_OPTION)) == 0)
-  {
-    this_key->code = KEY_LEFT_ALT;
-    return;
-  }
-  else if((strncmp(msg, cmd_RALT, strlen(cmd_RALT)) == 0) || strncmp(msg, cmd_ROPTION, strlen(cmd_ROPTION)) == 0)
-  {
-    this_key->code = KEY_RIGHT_ALT;
-    return;
-  }
-  else if((strncmp(msg, cmd_GUI, strlen(cmd_GUI)) == 0) || (strncmp(msg, cmd_WINDOWS, strlen(cmd_WINDOWS)) == 0) || (strncmp(msg, cmd_COMMAND, strlen(cmd_COMMAND)) == 0))
-  {
-    this_key->code = KEY_LEFT_GUI;
-    return;
-  }
-  else if((strncmp(msg, cmd_RWINDOWS, strlen(cmd_RWINDOWS)) == 0) || (strncmp(msg, cmd_RCOMMAND, strlen(cmd_RCOMMAND)) == 0))
-  {
-    this_key->code = KEY_RIGHT_GUI;
-    return;
-  }
-  else if((strncmp(msg, cmd_CTRL, strlen(cmd_CTRL)) == 0) || (strncmp(msg, cmd_CONTROL, strlen(cmd_CONTROL)) == 0))
-  {
-    this_key->code = KEY_LEFT_CTRL;
-    return;
-  }
-  else if(strncmp(msg, cmd_RCTRL, strlen(cmd_RCTRL)) == 0)
-  {
-    this_key->code = KEY_RIGHT_CTRL;
-    return;
-  }
-
-// ----------------------------------
-  this_key->key_type = KEY_TYPE_MEDIA;
-  if(strncmp(msg, cmd_MK_VOLUP, strlen(cmd_MK_VOLUP)) == 0)
-  {
-    this_key->code = KEY_MK_VOLUP;
-    return;
-  }
-  else if(strncmp(msg, cmd_MK_VOLDOWN, strlen(cmd_MK_VOLDOWN)) == 0)
-  {
-    this_key->code = KEY_MK_VOLDOWN;
-    return;
-  }
-  else if(strncmp(msg, cmd_MK_VOLMUTE, strlen(cmd_MK_VOLMUTE)) == 0)
-  {
-    this_key->code = KEY_MK_VOLMUTE;
-    return;
-  }
-  else if(strncmp(msg, cmd_MK_PREV, strlen(cmd_MK_PREV)) == 0)
-  {
-    this_key->code = KEY_MK_PREV;
-    return;
-  }
-  else if(strncmp(msg, cmd_MK_NEXT, strlen(cmd_MK_NEXT)) == 0)
-  {
-    this_key->code = KEY_MK_NEXT;
-    return;
-  }
-  else if(strncmp(msg, cmd_MK_PLAYPAUSE, strlen(cmd_MK_PLAYPAUSE)) == 0)
-  {
-    this_key->code = KEY_MK_PLAYPAUSE;
-    return;
-  }
-  else if(strncmp(msg, cmd_MK_VOLMUTE, strlen(cmd_MK_VOLMUTE)) == 0)
-  {
-    this_key->code = KEY_MK_VOLMUTE;
-    return;
-  }
-  else if(strncmp(msg, cmd_MK_STOP, strlen(cmd_MK_STOP)) == 0)
-  {
-    this_key->code = KEY_MK_STOP;
-    return;
-  }
-
-  // ----------------------------------
-  this_key->key_type = KEY_TYPE_MOUSE_BUTTON;
-  if(strncmp(msg, cmd_LMOUSE, strlen(cmd_LMOUSE)) == 0)
-  {
-    this_key->code = 1;
-    return;
-  }
-  else if(strncmp(msg, cmd_RMOUSE, strlen(cmd_RMOUSE)) == 0)
-  {
-    this_key->code = 2;
-    return;
-  }
-  else if(strncmp(msg, cmd_MMOUSE, strlen(cmd_MMOUSE)) == 0)
-  {
-    this_key->code = 4;
-    return;
-  }
-  else if(strncmp(msg, cmd_MOUSE_MOVE, strlen(cmd_MOUSE_MOVE)) == 0)
-  {
-    char* msg_end = msg + strlen(msg);
-    char* curr = goto_next_arg(msg, msg_end);
-    this_key->code = atoi(curr);
-    this_key->code2 = atoi(goto_next_arg(curr, msg_end));
-    this_key->key_type = KEY_TYPE_MOUSE_MOVEMENT;
-    return;
-  }
-  else if(strncmp(msg, cmd_MOUSE_WHEEL, strlen(cmd_MOUSE_WHEEL)) == 0)
-  {
-    this_key->code = atoi(goto_next_arg(msg, msg + strlen(msg)));
-    this_key->key_type = KEY_TYPE_MOUSE_WHEEL;
-    return;
-  }
-  init_my_key(this_key);
+  der->result = EXE_EMPTY_FILE;
+  der->next_pc = 0;
+  der->data = 0;
+  der->data2 = 0;
+  der->epilogue_actions = 0;
 }
 
-#define ACTION_PRESS_ONLY 0
-#define ACTION_RELEASE_ONLY 1
-#define ACTION_PRESS_RELEASE 2
-
-/* able to press 6 keys at once
-action type
-0 press only
-1 release only
-2 press then release
-*/
-void parse_combo(char* line, my_key* first_key, uint8_t action_type)
+void save_persistent_state(uint8_t options)
 {
-  if(line == NULL || first_key == NULL)
-    return;
-
-  my_key key_1, key_2, key_3, key_4, key_5;
-  char* line_end = line + strlen(line);
-  char *arg1 = goto_next_arg(line, line_end);
-  char *arg2 = goto_next_arg(arg1, line_end);
-  char *arg3 = goto_next_arg(arg2, line_end);
-  char *arg4 = goto_next_arg(arg3, line_end);
-  char *arg5 = goto_next_arg(arg4, line_end);
-
-  parse_special_key(arg1, &key_1);
-  if(arg1 != NULL && key_1.key_type == KEY_TYPE_UNKNOWN)
+  memset(read_buffer, 0, READ_BUF_SIZE);
+  if(options & LOOP_STATE)
+    memcpy(read_buffer, key_press_count, MAPPABLE_KEY_COUNT);
+  for (int i = 0; i < MAPPABLE_KEY_COUNT; ++i)
   {
-    key_1.key_type = KEY_TYPE_CHAR;
-    key_1.code = arg1[0];
-  }
-  parse_special_key(arg2, &key_2);
-  if(arg2 != NULL && key_2.key_type == KEY_TYPE_UNKNOWN)
-  {
-    key_2.key_type = KEY_TYPE_CHAR;
-    key_2.code = arg2[0];
-  }
-  parse_special_key(arg3, &key_3);
-  if(arg3 != NULL && key_3.key_type == KEY_TYPE_UNKNOWN)
-  {
-    key_3.key_type = KEY_TYPE_CHAR;
-    key_3.code = arg3[0];
-  }
-  parse_special_key(arg4, &key_4);
-  if(arg4 != NULL && key_4.key_type == KEY_TYPE_UNKNOWN)
-  {
-    key_4.key_type = KEY_TYPE_CHAR;
-    key_4.code = arg4[0];
-  }
-  parse_special_key(arg5, &key_5);
-  if(arg5 != NULL && key_5.key_type == KEY_TYPE_UNKNOWN)
-  {
-    key_5.key_type = KEY_TYPE_CHAR;
-    key_5.code = arg5[0];
-  }
-  // ------ press --------
-  if(action_type == ACTION_PRESS_ONLY || action_type == ACTION_PRESS_RELEASE)
-  {
-    keyboard_press(first_key, 0);
-    delay_wrapper(char_delay, char_delay_fuzz);
-    if(arg1 != NULL)
+    uint8_t r_addr = i*3 + COLOR_START_ADDR;
+    uint8_t g_addr = r_addr + 1;
+    uint8_t b_addr = g_addr + 1;
+    uint8_t red, green, blue;
+    if(options & COLOR_STATE)
     {
-      keyboard_press(&key_1, 0);
-      delay_wrapper(char_delay, char_delay_fuzz);
+      get_current_color(i, &red, &green, &blue);
     }
-    if(arg2 != NULL)
+    else
     {
-      keyboard_press(&key_2, 0);
-      delay_wrapper(char_delay, char_delay_fuzz);
+      red = p_cache.individual_key_color[i][0];
+      green = p_cache.individual_key_color[i][1];
+      blue = p_cache.individual_key_color[i][2];
     }
-    if(arg3 != NULL)
-    {
-      keyboard_press(&key_3, 0);
-      delay_wrapper(char_delay, char_delay_fuzz);
-    }
-    if(arg4 != NULL)
-    {
-      keyboard_press(&key_4, 0);
-      delay_wrapper(char_delay, char_delay_fuzz);
-    }
-    if(arg5 != NULL)
-    {
-      keyboard_press(&key_5, 0);
-      delay_wrapper(char_delay, char_delay_fuzz);
-    }
+    read_buffer[r_addr] = red;
+    read_buffer[g_addr] = green;
+    read_buffer[b_addr] = blue;
   }
-  // ------ release --------
-  if(action_type == ACTION_RELEASE_ONLY || action_type == ACTION_PRESS_RELEASE)
-  {
-    if(arg5 != NULL)
-    {
-      keyboard_release(&key_5);
-      delay_wrapper(char_delay, char_delay_fuzz);
-    }
-    if(arg4 != NULL)
-    {
-      keyboard_release(&key_4);
-      delay_wrapper(char_delay, char_delay_fuzz);
-    }
-    if(arg3 != NULL)
-    {
-      keyboard_release(&key_3);
-      delay_wrapper(char_delay, char_delay_fuzz);
-    }
-    if(arg2 != NULL)
-    {
-      keyboard_release(&key_2);
-      delay_wrapper(char_delay, char_delay_fuzz);
-    }
-    if(arg1 != NULL)
-    {
-      keyboard_release(&key_1);
-      delay_wrapper(char_delay, char_delay_fuzz);
-    }
-    keyboard_release(first_key);
-    delay_wrapper(char_delay, char_delay_fuzz);
-  }
-}
-
-int32_t get_arg(char* line)
-{
-  return atoi(goto_next_arg(line, line + strlen(line)));
-}
-
-uint8_t is_empty_line(char* line)
-{
-  for (int i = 0; i < strlen(line); ++i)
-    if(line[i] != ' ' && line[i] != '\t' && line[i] != '\n' && line[i] != '\r')
-      return 0;
-  return 1;
-}
-
-uint8_t parse_hold(char* line, uint8_t keynum)
-{
-  if(line == NULL)
-    return PARSE_ERROR;
-
-  my_key key_1, key_2;
-  char* line_end = line + strlen(line);
-  char *arg1 = goto_next_arg(line, line_end);
-  char *arg2 = goto_next_arg(arg1, line_end);
-  
-  parse_special_key(arg1, &key_1);
-  if(key_1.key_type == KEY_TYPE_UNKNOWN)
-  {
-    key_1.key_type = KEY_TYPE_CHAR;
-    key_1.code = arg1[0];
-  }
-  hold_cache[keynum].key_type = key_1.key_type;
-  hold_cache[keynum].code = key_1.code;
-
-  if(arg2 != NULL)
-  {
-    parse_special_key(arg2, &key_2);
-    if(key_2.key_type == KEY_TYPE_UNKNOWN)
-    {
-      key_2.key_type = KEY_TYPE_CHAR;
-      key_2.code = arg2[0];
-    }
-    hold_cach2[keynum].key_type = key_2.key_type;
-    hold_cach2[keynum].code = key_2.code;
-  }
-
-  keyboard_press(&key_1, 0);
-  osDelay(DEFAULT_CHAR_DELAY_MS);
-  if(arg2 != NULL)
-  {
-    keyboard_press(&key_2, 0);
-    osDelay(DEFAULT_CHAR_DELAY_MS);
-  }
-  return PARSE_OK;
-}
-
-uint8_t parse_line(char* line, uint8_t keynum)
-{
-  uint8_t result = PARSE_OK;
-
-  // cut off at line ending
-  for(int i = 0; i < strlen(line); ++i)
-    if(line[i] == '\r' || line[i] == '\n')
-      line[i] = 0;
-  // printf("this line: %s\n", line);
-  char* line_end = line + strlen(line);
-
-  if(strncmp(cmd_HOLD, line, strlen(cmd_HOLD)) == 0)
-  {
-    result = parse_hold(line, keynum);
-    goto parse_end;
-  }
-
-  my_key this_key;
-  parse_special_key(line, &this_key);
-  if(is_empty_line(line))
-    result = PARSE_EMPTY_LINE;
-  else if(is_mouse_type(&this_key))
-  {
-    keyboard_press(&this_key, 0);
-    delay_wrapper(cmd_delay, cmd_delay_fuzz);
-    keyboard_release(&this_key);
-    delay_wrapper(cmd_delay, cmd_delay_fuzz);
-  }
-  else if(this_key.key_type != KEY_TYPE_UNKNOWN)
-    parse_combo(line, &this_key, ACTION_PRESS_RELEASE);
-  else if(strncmp(cmd_REM, line, strlen(cmd_REM)) == 0)
-    ;
-  else if(strncmp(cmd_LCR, line, strlen(cmd_LCR)) == 0)
-  {
-    memset(key_press_count, 0, MAPPABLE_KEY_COUNT);
-    result = PARSE_OK;
-    goto parse_end;
-  }
-  else if(strncmp(cmd_KEYDOWN, line, strlen(cmd_KEYDOWN)) == 0)
-  {
-    parse_special_key(line + strlen(cmd_KEYDOWN), &this_key);
-    if(this_key.key_type == KEY_TYPE_UNKNOWN)
-    {
-      this_key.key_type = KEY_TYPE_CHAR;
-      this_key.code = (line + strlen(cmd_KEYDOWN))[0];
-    }
-    parse_combo(line + strlen(cmd_KEYDOWN), &this_key, ACTION_PRESS_ONLY);
-  }
-  else if(strncmp(cmd_KEYUP, line, strlen(cmd_KEYUP)) == 0)
-  {
-    parse_special_key(line + strlen(cmd_KEYUP), &this_key);
-    if(this_key.key_type == KEY_TYPE_UNKNOWN)
-    {
-      this_key.key_type = KEY_TYPE_CHAR;
-      this_key.code = (line + strlen(cmd_KEYUP))[0];
-    }
-    parse_combo(line + strlen(cmd_KEYUP), &this_key, ACTION_RELEASE_ONLY);
-  }
-  else if(strncmp(cmd_STRING, line, strlen(cmd_STRING)) == 0)
-    kb_print(line + strlen(cmd_STRING), char_delay, char_delay_fuzz);
-  else if(strncmp(cmd_UARTPRINT, line, strlen(cmd_UARTPRINT)) == 0)
-  {
-    printf("UART %s\n", line + strlen(cmd_UARTPRINT));
-    osDelay(25);
-  }
-  else if(is_sw_color_line(line) == 1)
-  {
-    uint8_t this_key_num = atoi(line + strlen(cmd_SWCOLOR)) - 1;
-    if(this_key_num > MAX_PROFILES)
-    {
-      result = PARSE_ERROR;
-      goto parse_end;
-    }
-    assign_colors(this_key_num, line, line_end);
-    redraw_bg();
-    delay_wrapper(char_delay, char_delay_fuzz);
-    goto parse_end;
-  }
-  else if(is_sw_color_line(line) == 2)
-  {
-    assign_colors(keynum, line, line_end);
-    p_cache.individual_keydown_color[keynum][0] = p_cache.individual_key_color[keynum][0];
-    p_cache.individual_keydown_color[keynum][1] = p_cache.individual_key_color[keynum][1];
-    p_cache.individual_keydown_color[keynum][2] = p_cache.individual_key_color[keynum][2];
-    redraw_bg();
-    delay_wrapper(char_delay, char_delay_fuzz);
-    goto parse_end;
-  }
-  else if(strncmp(cmd_DELAY, line, strlen(cmd_DELAY)) == 0)
-  {
-    int32_t argg = get_arg(line);
-    if(argg == 0)
-    {
-      result = PARSE_ERROR;
-      goto parse_end;
-    }
-    osDelay(argg);
-  }
-  else if((strncmp(cmd_DEFAULTDELAY, line, strlen(cmd_DEFAULTDELAY)) == 0) || (strncmp(cmd_DEFAULT_DELAY, line, strlen(cmd_DEFAULT_DELAY)) == 0))
-  {
-    int32_t argg = get_arg(line);
-    if(argg == 0)
-    {
-      result = PARSE_ERROR;
-      goto parse_end;
-    }
-    cmd_delay = argg;
-  }
-  else if(strncmp(cmd_DEFAULTCHARDELAY, line, strlen(cmd_DEFAULTCHARDELAY)) == 0)
-  {
-    int32_t argg = get_arg(line);
-    if(argg == 0)
-    {
-      result = PARSE_ERROR;
-      goto parse_end;
-    }
-    char_delay = argg;
-  }
-  else if(strncmp(cmd_DEFAULTDELAYFUZZ, line, strlen(cmd_DEFAULTDELAYFUZZ)) == 0)
-  {
-    cmd_delay_fuzz = get_arg(line);
-  }
-  else if(strncmp(cmd_DEFAULTCHARDELAYFUZZ, line, strlen(cmd_DEFAULTCHARDELAYFUZZ)) == 0)
-  {
-    char_delay_fuzz = get_arg(line);
-  }
-  else
-    result = PARSE_ERROR;
-
-  parse_end:
-  if(result == PARSE_OK)
-    delay_wrapper(cmd_delay, cmd_delay_fuzz);
-  return result;
-}
-
-void keypress_wrap(uint8_t keynum)
-{
-  uint16_t line_num = 0;
-  uint8_t result;
-  uint8_t found_start = 0;
   memset(temp_buf, 0, PATH_SIZE);
-  sprintf(temp_buf, "/%s/key%d.txt", p_cache.profile_fn, keynum+1);
-  // printf("%s\n", temp_buf);
-  if(f_open(&sd_file, temp_buf, FA_READ) != 0)
-    goto kp_end;
-  cmd_delay = DEFAULT_CMD_DELAY_MS;
-  char_delay = DEFAULT_CHAR_DELAY_MS;
-  cmd_delay_fuzz = 0;
-  char_delay_fuzz = 0;
-  while(f_gets(read_buffer, READ_BUF_SIZE, &sd_file) != NULL)
-  {
-    line_num++;
-    // if this key has loops, keep going until we are at the correct starting point
-    if(key_max_loop[keynum] != 0 && found_start == 0)
-    {
-      uint8_t current_loop = key_press_count[keynum] % key_max_loop[keynum];
-      memset(temp_buf, 0, PATH_SIZE);
-      sprintf(temp_buf, "%s%d", cmd_LOOP, current_loop);
-      if(strncmp(read_buffer, temp_buf, strlen(temp_buf)) != 0)
-        continue;
-      found_start = 1;
-      continue;
-    }
-    // stop at the next loop
-    if(strncmp(cmd_LOOP, read_buffer, strlen(cmd_LOOP)) == 0)
-    {
-      goto kp_end;
-    }
-    if(strncmp(cmd_REPEAT, read_buffer, strlen(cmd_REPEAT)) == 0)
-    {
-      uint8_t repeats = atoi(goto_next_arg(read_buffer, read_buffer + READ_BUF_SIZE));
-      for (int i = 0; i < repeats; ++i)
-        parse_line(prev_line, keynum);
-      continue;
-    }
-    if(strncmp(cmd_SLEEP, read_buffer, strlen(cmd_SLEEP)) == 0)
-    {
-      my_dpc.type = DPC_SLEEP;
-      goto kp_end;
-    }
-    if(strncmp(cmd_PREV_PROFILE, read_buffer, strlen(cmd_PREV_PROFILE)) == 0)
-    {
-      my_dpc.type = DPC_PREV_PROFILE;
-      goto kp_end;
-    }
-    if(strncmp(cmd_NEXT_PROFILE, read_buffer, strlen(cmd_NEXT_PROFILE)) == 0)
-    {
-      my_dpc.type = DPC_NEXT_PROFILE;
-      goto kp_end;
-    }
-    if(strncmp(cmd_GOTO_PROFILE, read_buffer, strlen(cmd_GOTO_PROFILE)) == 0)
-    {
-      my_dpc.type = DPC_GOTO_PROFILE;
-      my_dpc.data = atoi(goto_next_arg(read_buffer, read_buffer + READ_BUF_SIZE));
-      goto kp_end;
-    }
-    result = parse_line(read_buffer, keynum);
-    if(result == PARSE_ERROR)
-    {
-      ssd1306_Fill(Black);
-      ssd1306_SetCursor(5, 0);
-      ssd1306_WriteString("Parse error in key:", Font_6x10,White);
-      ssd1306_SetCursor(5, 12);
-      ssd1306_WriteString(p_cache.key_fn[keynum], Font_6x10,White);
-      memset(temp_buf, 0, PATH_SIZE);
-      sprintf(temp_buf, "line %d:", line_num);
-      ssd1306_SetCursor(5, 30);
-      ssd1306_WriteString(temp_buf, Font_6x10,White);
-      read_buffer[21] = 0;
-      ssd1306_SetCursor(5, 42);
-      ssd1306_WriteString(read_buffer, Font_6x10,White);
-      ssd1306_UpdateScreen();
-      error_animation(0);
-      osDelay(10000);
-      error_animation(1);
-      print_legend(0, 0);
-      goto kp_end;
-    }
-    else if(result == PARSE_OK)
-    {
-      memset(prev_line, 0, READ_BUF_SIZE);
-      strcpy(prev_line, read_buffer);
-    }
-    memset(read_buffer, 0, READ_BUF_SIZE);
-  }
-  kp_end:
+  sprintf(temp_buf, "/%s/state.sps", p_cache.profile_fn);
+  f_open(&sd_file, temp_buf, FA_CREATE_ALWAYS | FA_WRITE);
+  f_write(&sd_file, read_buffer, READ_BUF_SIZE, &bytes_read);
   f_close(&sd_file);
+}
+
+void keypress_wrapper(uint8_t keynum, ds3_exe_result* exe)
+{
+  memset(temp_buf, 0, PATH_SIZE);
+  sprintf(temp_buf, "/%s/key%d.dsb", p_cache.profile_fn, keynum+1);
+  der_init(exe);
+  if(f_stat(temp_buf, NULL) != 0)
+    return;
+  play_keydown_animation(keynum);
+  run_dsb(exe, keynum);
   key_press_count[keynum]++;
+  if(exe->epilogue_actions & 0x3)
+    save_persistent_state(exe->epilogue_actions);
 }
 
-void dpc_init(duckypad_parsed_command* dpc)
+void handle_keypress(uint8_t keynum, but_status* b_status, ds3_exe_result* exe)
 {
-  dpc->type = DPC_NONE;
-  dpc->data = 0;
-}
+  keypress_wrapper(keynum, exe);
 
-void handle_keypress(uint8_t keynum, but_status* b_status)
-{
-  dpc_init(&my_dpc);
-  keypress_wrap(keynum);
-  // don't repeat if this key asks to sleep or change profiles
-  if(my_dpc.type != DPC_NONE)
+  if(exe->result != EXE_HALT)
     return;
-  // don't repeat if this key is HOLD command
-  if(hold_cache[keynum].key_type != KEY_TYPE_UNKNOWN && hold_cache[keynum].code != 0)
-    return;
-  // wait 500ms
+
   uint32_t hold_start = HAL_GetTick();
   while(1)
   {
-    HAL_IWDG_Refresh(&hiwdg);
     keyboard_update();
     if(b_status->button_state == BUTTON_RELEASED)
       return;
     if(HAL_GetTick() - hold_start > 500)
       break;
   }
-
   // start repeating
   while(1)
   {
-    HAL_IWDG_Refresh(&hiwdg);
     keyboard_update();
-    keypress_wrap(keynum);
+    keypress_wrapper(keynum, exe);
     if(b_status->button_state == BUTTON_RELEASED)
       return;
   }

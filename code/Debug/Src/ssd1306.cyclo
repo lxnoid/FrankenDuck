@@ -1,9 +1,0 @@
-../Src/ssd1306.c:44:13:ssd1306_WriteCommand	2
-../Src/ssd1306.c:50:6:ssd1306_dim	3
-../Src/ssd1306.c:72:9:ssd1306_Init	1
-../Src/ssd1306.c:126:6:ssd1306_Fill	3
-../Src/ssd1306.c:140:6:ssd1306_UpdateScreen	3
-../Src/ssd1306.c:162:6:ssd1306_DrawPixel	5
-../Src/ssd1306.c:194:6:ssd1306_WriteChar	6
-../Src/ssd1306.c:236:6:ssd1306_WriteString	3
-../Src/ssd1306.c:258:6:ssd1306_SetCursor	1

@@ -1,6 +1,0 @@
-../Src/user_diskio.c:45:6:hwif_init_wtf	1
-../Src/user_diskio.c:85:9:USER_initialize	2
-../Src/user_diskio.c:102:9:USER_status	2
-../Src/user_diskio.c:122:9:USER_read	3
-../Src/user_diskio.c:146:9:USER_write	3
-../Src/user_diskio.c:171:9:USER_ioctl	7

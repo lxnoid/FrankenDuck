@@ -117,6 +117,8 @@ void neopixel_off(void)
   for (int i = 0; i < NEOPIXEL_COUNT; ++i)
     neo_anime[i].animation_type = ANIMATION_NONE;
   memset(red_buf, 0, NEOPIXEL_COUNT);
+  memset(green_buf, 0, NEOPIXEL_COUNT);
+  memset(blue_buf, 0, NEOPIXEL_COUNT);
   neopixel_show(red_buf, red_buf, red_buf, brightness_values[brightness_index]);
 }
 

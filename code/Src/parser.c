@@ -491,6 +491,9 @@ void load_settings(void)
       brightness_index = atoi(temp_buf+3);
     if(brightness_index >= BRIGHTNESS_LEVELS)
       brightness_index = BRIGHTNESS_LEVELS - 1;
+    else if (brightness_index < 0)
+      brightness_index = BRIGHTNESS_LEVELS -1;
+    
     if(strncmp(temp_buf, "kbl ", 4) == 0)
     {
       strcpy(curr_kb_layout, temp_buf + 4);

@@ -34,7 +34,7 @@ my_stack arithmetic_stack, call_stack;
 void stack_init(my_stack* ms)
 {
   ms->top = 0;
-  memset(ms->stack, 0, STACK_SIZE);
+  memset(ms->stack, 0, sizeof(uint16_t) * STACK_SIZE);
 }
 
 uint8_t stack_push(my_stack* ms, uint16_t value)
@@ -249,7 +249,7 @@ void parse_swcf(void)
 
 void parse_swcr(uint8_t keynum)
 {
-  uint16_t swcr_arg;
+  uint16_t swcr_arg = 0;
   stack_pop(&arithmetic_stack, &swcr_arg);
 
   if(swcr_arg == 0)
@@ -266,7 +266,7 @@ void parse_swcr(uint8_t keynum)
 
 void parse_olc(void)
 {
-  uint16_t xxx, yyy;
+  uint16_t xxx = 0, yyy = 0;
   stack_pop(&arithmetic_stack, &yyy);
   stack_pop(&arithmetic_stack, &xxx);
   if(xxx >= SSD1306_WIDTH || yyy >= SSD1306_HEIGHT)

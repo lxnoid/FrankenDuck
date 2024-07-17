@@ -119,7 +119,7 @@ void neopixel_off(void)
   memset(red_buf, 0, NEOPIXEL_COUNT);
   memset(green_buf, 0, NEOPIXEL_COUNT);
   memset(blue_buf, 0, NEOPIXEL_COUNT);
-  neopixel_show(red_buf, red_buf, red_buf, brightness_values[brightness_index]);
+  neopixel_show(red_buf, green_buf, blue_buf, brightness_values[brightness_index]);
 }
 
 void anime_init(void)

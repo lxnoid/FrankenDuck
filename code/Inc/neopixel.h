@@ -7,7 +7,7 @@
 
 #include "stm32f0xx_hal.h"
 #include "shared.h"
-#define NEOPIXEL_PADDING_BUF_SIZE 4
+#define NEOPIXEL_PADDING_BUF_SIZE 50
 #ifdef FRANKENDUCK
 	#define NEOPIXEL_COUNT 17
 #else

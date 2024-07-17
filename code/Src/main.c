@@ -149,11 +149,15 @@ added _TIME_S read-only variable
 increased max profiles to 64
 change MAX_PROFILES in parser.h
 change BIN_BUF_SIZE in ds3_vm.c if out of space
+
+1.3.2
+2024 01 22
+fixed backlight brightness saving bug
 */
 
 uint8_t fw_version_major = 1;
 uint8_t fw_version_minor = 3;
-uint8_t fw_version_patch = 1;
+uint8_t fw_version_patch = 2;
 char instruction[] = "For instructions, see";
 uint8_t fw_version_major_fd = 2;
 uint8_t startup = 0;
@@ -231,10 +235,6 @@ int main(void)
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
-
-  /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
   /* definition and creation of kb_scan */

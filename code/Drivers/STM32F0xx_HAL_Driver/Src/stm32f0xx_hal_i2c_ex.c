@@ -3,23 +3,10 @@
   * @file    stm32f0xx_hal_i2c_ex.c
   * @author  MCD Application Team
   * @brief   I2C Extended HAL module driver.
-  *          This file provides firmware functions to manage the following
+  *          This file provides firmware functions to manage the following 
   *          functionalities of I2C Extended peripheral:
-  *           + Filter Mode Functions
-  *           + WakeUp Mode Functions
-  *           + FastModePlus Functions
+  *           + Extended features functions
   *
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2016 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
   @verbatim
   ==============================================================================
                ##### I2C peripheral Extended features  #####
@@ -30,8 +17,7 @@
 
        (+) Possibility to disable or enable Analog Noise Filter
        (+) Use of a configured Digital Noise Filter
-       (+) Disable or enable wakeup from Stop mode(s)
-       (+) Disable or enable Fast Mode Plus
+       (+) Disable or enable wakeup from Stop mode
 
                      ##### How to use this driver #####
   ==============================================================================
@@ -45,6 +31,34 @@
           (++) HAL_I2CEx_EnableFastModePlus()
           (++) HAL_I2CEx_DisableFastModePlus()
   @endverbatim
+  ******************************************************************************
+  * @attention
+  *
+  * <h2><center>&copy; COPYRIGHT(c) 2016 STMicroelectronics</center></h2>
+  *
+  * Redistribution and use in source and binary forms, with or without modification,
+  * are permitted provided that the following conditions are met:
+  *   1. Redistributions of source code must retain the above copyright notice,
+  *      this list of conditions and the following disclaimer.
+  *   2. Redistributions in binary form must reproduce the above copyright notice,
+  *      this list of conditions and the following disclaimer in the documentation
+  *      and/or other materials provided with the distribution.
+  *   3. Neither the name of STMicroelectronics nor the names of its contributors
+  *      may be used to endorse or promote products derived from this software
+  *      without specific prior written permission.
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  *
+  ******************************************************************************
   */
 
 /* Includes ------------------------------------------------------------------*/
@@ -72,15 +86,16 @@
   * @{
   */
 
-/** @defgroup I2CEx_Exported_Functions_Group1 Filter Mode Functions
-  * @brief    Filter Mode Functions
-  *
+/** @defgroup I2CEx_Exported_Functions_Group1 Extended features functions
+  * @brief    Extended features functions
+ *
 @verbatim
  ===============================================================================
-                      ##### Filter Mode Functions #####
+                      ##### Extended features functions #####
  ===============================================================================
     [..] This section provides functions allowing to:
-      (+) Configure Noise Filters
+      (+) Configure Noise Filters 
+      (+) Configure Wake Up Feature
 
 @endverbatim
   * @{
@@ -99,7 +114,7 @@ HAL_StatusTypeDef HAL_I2CEx_ConfigAnalogFilter(I2C_HandleTypeDef *hi2c, uint32_t
   assert_param(IS_I2C_ALL_INSTANCE(hi2c->Instance));
   assert_param(IS_I2C_ANALOG_FILTER(AnalogFilter));
 
-  if (hi2c->State == HAL_I2C_STATE_READY)
+  if(hi2c->State == HAL_I2C_STATE_READY)
   {
     /* Process Locked */
     __HAL_LOCK(hi2c);
@@ -139,13 +154,13 @@ HAL_StatusTypeDef HAL_I2CEx_ConfigAnalogFilter(I2C_HandleTypeDef *hi2c, uint32_t
   */
 HAL_StatusTypeDef HAL_I2CEx_ConfigDigitalFilter(I2C_HandleTypeDef *hi2c, uint32_t DigitalFilter)
 {
-  uint32_t tmpreg;
+  uint32_t tmpreg = 0U;
 
   /* Check the parameters */
   assert_param(IS_I2C_ALL_INSTANCE(hi2c->Instance));
   assert_param(IS_I2C_DIGITAL_FILTER(DigitalFilter));
 
-  if (hi2c->State == HAL_I2C_STATE_READY)
+  if(hi2c->State == HAL_I2C_STATE_READY)
   {
     /* Process Locked */
     __HAL_LOCK(hi2c);
@@ -181,37 +196,20 @@ HAL_StatusTypeDef HAL_I2CEx_ConfigDigitalFilter(I2C_HandleTypeDef *hi2c, uint32_
     return HAL_BUSY;
   }
 }
-/**
-  * @}
-  */
 #if defined(I2C_CR1_WUPEN)
 
-/** @defgroup I2CEx_Exported_Functions_Group2 WakeUp Mode Functions
-  * @brief    WakeUp Mode Functions
-  *
-@verbatim
- ===============================================================================
-                      ##### WakeUp Mode Functions #####
- ===============================================================================
-    [..] This section provides functions allowing to:
-      (+) Configure Wake Up Feature
-
-@endverbatim
-  * @{
-  */
-
 /**
-  * @brief  Enable I2C wakeup from Stop mode(s).
+  * @brief  Enable I2C wakeup from stop mode.
   * @param  hi2c Pointer to a I2C_HandleTypeDef structure that contains
   *                the configuration information for the specified I2Cx peripheral.
   * @retval HAL status
   */
-HAL_StatusTypeDef HAL_I2CEx_EnableWakeUp(I2C_HandleTypeDef *hi2c)
+HAL_StatusTypeDef HAL_I2CEx_EnableWakeUp (I2C_HandleTypeDef *hi2c)
 {
   /* Check the parameters */
   assert_param(IS_I2C_WAKEUP_FROMSTOP_INSTANCE(hi2c->Instance));
 
-  if (hi2c->State == HAL_I2C_STATE_READY)
+  if(hi2c->State == HAL_I2C_STATE_READY)
   {
     /* Process Locked */
     __HAL_LOCK(hi2c);
@@ -240,17 +238,17 @@ HAL_StatusTypeDef HAL_I2CEx_EnableWakeUp(I2C_HandleTypeDef *hi2c)
 }
 
 /**
-  * @brief  Disable I2C wakeup from Stop mode(s).
+  * @brief  Disable I2C wakeup from stop mode.
   * @param  hi2c Pointer to a I2C_HandleTypeDef structure that contains
   *                the configuration information for the specified I2Cx peripheral.
   * @retval HAL status
   */
-HAL_StatusTypeDef HAL_I2CEx_DisableWakeUp(I2C_HandleTypeDef *hi2c)
+HAL_StatusTypeDef HAL_I2CEx_DisableWakeUp (I2C_HandleTypeDef *hi2c)
 {
   /* Check the parameters */
   assert_param(IS_I2C_WAKEUP_FROMSTOP_INSTANCE(hi2c->Instance));
 
-  if (hi2c->State == HAL_I2C_STATE_READY)
+  if(hi2c->State == HAL_I2C_STATE_READY)
   {
     /* Process Locked */
     __HAL_LOCK(hi2c);
@@ -263,7 +261,7 @@ HAL_StatusTypeDef HAL_I2CEx_DisableWakeUp(I2C_HandleTypeDef *hi2c)
     /* Enable wakeup from stop mode */
     hi2c->Instance->CR1 &= ~(I2C_CR1_WUPEN);
 
-    __HAL_I2C_ENABLE(hi2c);
+    __HAL_I2C_ENABLE(hi2c); 
 
     hi2c->State = HAL_I2C_STATE_READY;
 
@@ -277,24 +275,7 @@ HAL_StatusTypeDef HAL_I2CEx_DisableWakeUp(I2C_HandleTypeDef *hi2c)
     return HAL_BUSY;
   }
 }
-/**
-  * @}
-  */
-#endif /* I2C_CR1_WUPEN */
-
-/** @defgroup I2CEx_Exported_Functions_Group3 Fast Mode Plus Functions
-  * @brief    Fast Mode Plus Functions
-  *
-@verbatim
- ===============================================================================
-                      ##### Fast Mode Plus Functions #####
- ===============================================================================
-    [..] This section provides functions allowing to:
-      (+) Configure Fast Mode Plus
-
-@endverbatim
-  * @{
-  */
+#endif
 
 /**
   * @brief Enable the I2C fast mode plus driving capability.
@@ -345,9 +326,11 @@ void HAL_I2CEx_DisableFastModePlus(uint32_t ConfigFastModePlus)
   /* Disable fast mode plus driving capability for selected pin */
   CLEAR_BIT(SYSCFG->CFGR1, (uint32_t)ConfigFastModePlus);
 }
+
 /**
   * @}
   */
+
 /**
   * @}
   */
@@ -360,3 +343,5 @@ void HAL_I2CEx_DisableFastModePlus(uint32_t ConfigFastModePlus)
 /**
   * @}
   */
+
+/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

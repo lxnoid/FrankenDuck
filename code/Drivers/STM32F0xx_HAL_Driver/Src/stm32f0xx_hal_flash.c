@@ -69,13 +69,31 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2016 STMicroelectronics.
-  * All rights reserved.
+  * <h2><center>&copy; COPYRIGHT(c) 2016 STMicroelectronics</center></h2>
   *
-  * This software is licensed under terms that can be found in the LICENSE file in
-  * the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  ******************************************************************************
+  * Redistribution and use in source and binary forms, with or without modification,
+  * are permitted provided that the following conditions are met:
+  *   1. Redistributions of source code must retain the above copyright notice,
+  *      this list of conditions and the following disclaimer.
+  *   2. Redistributions in binary form must reproduce the above copyright notice,
+  *      this list of conditions and the following disclaimer in the documentation
+  *      and/or other materials provided with the distribution.
+  *   3. Neither the name of STMicroelectronics nor the names of its contributors
+  *      may be used to endorse or promote products derived from this software
+  *      without specific prior written permission.
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  *
+  ******************************************************************************  
   */
 
 /* Includes ------------------------------------------------------------------*/
@@ -152,7 +170,7 @@ extern void    FLASH_PageErase(uint32_t PageAddress);
   * @note   If an erase and a program operations are requested simultaneously,    
   *         the erase operation is performed before the program one.
   *  
-  * @note   FLASH should be previously erased before new programming (only exception to this 
+  * @note   FLASH should be previously erased before new programmation (only exception to this 
   *         is when 0x0000 is programmed)
   *
   * @param  TypeProgram   Indicate the way to program at a specified address.
@@ -205,7 +223,7 @@ HAL_StatusTypeDef HAL_FLASH_Program(uint32_t TypeProgram, uint32_t Address, uint
     
         /* If the program operation is completed, disable the PG Bit */
         CLEAR_BIT(FLASH->CR, FLASH_CR_PG);
-      /* In case of error, stop programming procedure */
+      /* In case of error, stop programation procedure */
       if (status != HAL_OK)
       {
         break;
@@ -416,7 +434,7 @@ void HAL_FLASH_IRQHandler(void)
 
 /**
   * @brief  FLASH end of operation interrupt callback
-  * @param  ReturnValue The value saved in this parameter depends on the ongoing procedure
+  * @param  ReturnValue: The value saved in this parameter depends on the ongoing procedure
   *                 - Mass Erase: No return value expected
   *                 - Pages Erase: Address of the page which has been erased 
   *                    (if 0xFFFFFFFF, it means that all the selected pages have been erased)
@@ -435,7 +453,7 @@ __weak void HAL_FLASH_EndOfOperationCallback(uint32_t ReturnValue)
 
 /**
   * @brief  FLASH operation error interrupt callback
-  * @param  ReturnValue The value saved in this parameter depends on the ongoing procedure
+  * @param  ReturnValue: The value saved in this parameter depends on the ongoing procedure
   *                 - Mass Erase: No return value expected
   *                 - Pages Erase: Address of the page which returned an error
   *                 - Program: Address which was selected for data program
@@ -476,22 +494,18 @@ __weak void HAL_FLASH_OperationErrorCallback(uint32_t ReturnValue)
   */
 HAL_StatusTypeDef HAL_FLASH_Unlock(void)
 {
-  HAL_StatusTypeDef status = HAL_OK;
-
-  if(READ_BIT(FLASH->CR, FLASH_CR_LOCK) != RESET)
+  if (HAL_IS_BIT_SET(FLASH->CR, FLASH_CR_LOCK))
   {
     /* Authorize the FLASH Registers access */
     WRITE_REG(FLASH->KEYR, FLASH_KEY1);
     WRITE_REG(FLASH->KEYR, FLASH_KEY2);
-
-    /* Verify Flash is unlocked */
-    if(READ_BIT(FLASH->CR, FLASH_CR_LOCK) != RESET)
-    {
-      status = HAL_ERROR;
-    }
+  }
+  else
+  {
+    return HAL_ERROR;
   }
 
-  return status;
+  return HAL_OK; 
 }
 
 /**
@@ -689,3 +703,4 @@ static void FLASH_SetErrorCode(void)
   * @}
   */
 
+/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

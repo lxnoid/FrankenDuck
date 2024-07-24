@@ -16,12 +16,7 @@
 #define DEFAULT_KD_RED 255
 #define DEFAULT_KD_GREEN 255
 #define DEFAULT_KD_BLUE 255
-#ifdef FRANKENDUCK
-	#define BRIGHTNESS_LEVELS 11
-#else
-	#define BRIGHTNESS_LEVELS 5
-#endif
-
+#define BRIGHTNESS_LEVELS 5
 
 typedef struct
 {
@@ -47,7 +42,7 @@ void key_reset(uint8_t which);
 void get_current_color(uint8_t which, uint8_t* red, uint8_t* green, uint8_t* blue);
 
 extern int8_t brightness_index;
-extern uint8_t brightness_values[BRIGHTNESS_LEVELS];
+extern const uint8_t brightness_values[BRIGHTNESS_LEVELS];
 #ifdef __cplusplus
 }
 #endif

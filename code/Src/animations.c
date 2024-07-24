@@ -8,7 +8,7 @@
 
 uint32_t frame_counter;
 #ifdef FRANKENDUCK
-	uint8_t pixel_map[NEOPIXEL_COUNT] = {2, 1, 0, 3, 4, 5, 8, 7, 6, 9, 10, 11, 14, 13, 12, 15, 16};
+	const uint8_t pixel_map[NEOPIXEL_COUNT] = {2, 1, 0, 3, 4, 5, 8, 7, 6, 9, 10, 11, 14, 13, 12, 15, 16};
 #else
 	uint8_t pixel_map[NEOPIXEL_COUNT] = {2, 1, 0, 3, 4, 5, 8, 7, 6, 9, 10, 11, 14, 13, 12};
 #endif
@@ -20,11 +20,7 @@ uint8_t color_red[THREE] = {255, 0, 0};
 uint8_t color_black[THREE] = {0, 0, 0};
 uint8_t profile_quickswitch_color[THREE] = {50, 50, 50};
 int8_t brightness_index = BRIGHTNESS_LEVELS - 1;
-#ifdef FRANKENDUCK
-	uint8_t brightness_values[BRIGHTNESS_LEVELS] = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
-#else
-	uint8_t brightness_values[BRIGHTNESS_LEVELS] = {0, 20, 50, 70, 100};
-#endif
+const uint8_t brightness_values[BRIGHTNESS_LEVELS] = {0, 20, 50, 70, 100};
 
 void set_pixel_3color(uint8_t which, uint8_t r, uint8_t g, uint8_t b)
 {

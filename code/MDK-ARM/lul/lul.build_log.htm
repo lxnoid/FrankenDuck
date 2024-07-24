@@ -1,0 +1,93 @@
+<html>
+<body>
+<pre>
+<h1>µVision Build Log</h1>
+<h2>Tool Versions:</h2>
+IDE-Version: µVision V5.40.0.0
+Copyright (C) 2024 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: Alex Nagel, Roche, LIC=1N0AE-5J652-IWLJA-EHJL5-MI3FH-T158F
+ 
+Tool Versions:
+Toolchain:       MDK-ARM Cortex-M0/M0+ for ST  Version: 5.40.0.3
+Toolchain Path:  C:\Dev\Keil_v5\ARM\Arm_Compiler_5.06u7\Bin
+C Compiler:      Armcc.exe V5.06 update 7 (build 960)
+Assembler:       Armasm.exe V5.06 update 7 (build 960)
+Linker/Locator:  ArmLink.exe V5.06 update 7 (build 960)
+Library Manager: ArmAr.exe V5.06 update 7 (build 960)
+Hex Converter:   FromElf.exe V5.06 update 7 (build 960)
+CPU DLL:         SARMCM3.DLL V5.40.0.3
+Dialog DLL:      DARMCM1.DLL V1.19.6.0
+Target DLL:      STLink\ST-LINKIII-KEIL_SWO.dll V3.3.0.0
+Dialog DLL:      TARMCM1.DLL V1.14.6.0
+ 
+<h2>Project:</h2>
+C:\Users\noid\OneDrive\Dokumente\Coding\lx_FrankenDuck\code\MDK-ARM\lul.uvprojx
+Project File Date:  07/24/2024
+
+<h2>Output:</h2>
+*** Using Compiler 'V5.06 update 7 (build 960)', folder: 'C:\Dev\Keil_v5\ARM\Arm_Compiler_5.06u7\Bin'
+Build target 'lul'
+Note: source file '..//Src/system_stm32f0xx.c' - object file renamed from 'lul\system_stm32f0xx.o' to 'lul\system_stm32f0xx_1.o'.
+compiling animations.c...
+compiling keyboard.c...
+..\Src\keyboard.c(489): warning:  #111-D: statement is unreachable
+      case 0xC2: return  (ascii);  break;
+..\Src\keyboard.c(490): warning:  #111-D: statement is unreachable
+      case 0xC3: return  (ascii | 0xC0);  break;
+..\Src\keyboard.c(596): warning:  #1-D: last line of file ends without a newline
+  }
+..\Src\keyboard.c: 3 warnings, 0 errors
+compiling main.c...
+compiling ds3_vm.c...
+compiling my_tasks.c...
+..\Src\my_tasks.c(529): warning:  #167-D: argument of type "uint8_t *" is incompatible with parameter of type "const TCHAR *"
+      if (f_opendir(&dir, hid_rx_buf+3) != FR_OK)
+..\Src\my_tasks.c(548): warning:  #167-D: argument of type "uint8_t *" is incompatible with parameter of type "char *restrict"
+        strncpy(hid_tx_buf+4, this_filename, FILENAME_SIZE);
+..\Src\my_tasks.c(581): warning:  #167-D: argument of type "uint8_t *" is incompatible with parameter of type "const TCHAR *"
+      if(f_open(&sd_file, hid_rx_buf+3, FA_READ) != 0)
+..\Src\my_tasks.c(628): warning:  #167-D: argument of type "uint8_t *" is incompatible with parameter of type "const TCHAR *"
+      if(f_open(&sd_file, hid_rx_buf+3, FA_CREATE_ALWAYS | FA_WRITE) != 0)
+..\Src\my_tasks.c(695): warning:  #167-D: argument of type "uint8_t *" is incompatible with parameter of type "const TCHAR *"
+      f_unlink(hid_rx_buf+3);
+..\Src\my_tasks.c(714): warning:  #167-D: argument of type "uint8_t *" is incompatible with parameter of type "const TCHAR *"
+      if(f_mkdir(hid_rx_buf+3) != 0)
+..\Src\my_tasks.c(736): warning:  #167-D: argument of type "uint8_t *" is incompatible with parameter of type "char *"
+      delete_node(hid_rx_buf+3, HID_RX_BUF_SIZE - 3, &fno);
+..\Src\my_tasks.c: 7 warnings, 0 errors
+compiling parser.c...
+..\Src\parser.c(289): warning:  #1293-D: assignment in condition
+      while ((c = *str++) && (str <= end))
+..\Src\parser.c(313): warning:  #167-D: argument of type "char *" is incompatible with parameter of type "uint8_t *"
+    return djb2(arg_start, kw_len);
+..\Src\parser.c: 2 warnings, 0 errors
+linking...
+Program Size: Code=47732 RO-data=2872 RW-data=1408 ZI-data=15032  
+FromELF: creating hex file...
+"lul\lul.axf" - 0 Error(s), 12 Warning(s).
+
+<h2>Software Packages used:</h2>
+
+Package Vendor: ARM
+                https://www.keil.com/pack/ARM.CMSIS.6.1.0.pack
+                ARM::CMSIS@6.1.0
+                CMSIS (Common Microcontroller Software Interface Standard)
+   * Component: CORE Version: 6.1.0
+
+Package Vendor: Keil
+                https://www.keil.com/pack/Keil.STM32F0xx_DFP.2.1.1.pack
+                Keil::STM32F0xx_DFP@2.1.1
+                STMicroelectronics STM32F0 Series Device Support, Drivers and Examples
+
+<h2>Collection of Component include folders:</h2>
+  ./RTE/_lul
+  C:/Users/noid/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include
+  C:/Users/noid/AppData/Local/Arm/Packs/Keil/STM32F0xx_DFP/2.1.1/Drivers/CMSIS/Device/ST/STM32F0xx/Include
+
+<h2>Collection of Component Files used:</h2>
+
+   * Component: ARM::CMSIS:CORE@6.1.0
+Build Time Elapsed:  00:00:02
+</pre>
+</body>
+</html>

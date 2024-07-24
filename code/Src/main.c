@@ -218,10 +218,6 @@ int main(void)
   MX_I2C1_Init();
   MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
-  printf("duckypad V2\ndekuNukem 2020\n");
-	#ifdef FRANKENDUCK
-		printf("Frankenduck V2\nNothing'24\n");
-	#endif
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */

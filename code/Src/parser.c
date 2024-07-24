@@ -472,7 +472,7 @@ void save_settings(void)
   if(f_open(&sd_file, "dp_settings.txt", FA_CREATE_ALWAYS | FA_WRITE) != 0)
     goto ss_end;
   memset(temp_buf, 0, PATH_SIZE);
-  sprintf(temp_buf, "sleep_after_min %d\nbi %d\nkbl %s\nReversed UD %d\n", dp_settings.sleep_after_ms/60000, brightness_index, curr_kb_layout, dp_settings.frankenduck);
+  sprintf(temp_buf, "sleep_after_min %d\nbi %d\nkbl %s\n", dp_settings.sleep_after_ms/60000, brightness_index, curr_kb_layout);
   f_write(&sd_file, temp_buf, strlen(temp_buf), &bytes_read);
   ss_end:
   f_close(&sd_file);
@@ -491,9 +491,6 @@ void load_settings(void)
       brightness_index = atoi(temp_buf+3);
     if(brightness_index >= BRIGHTNESS_LEVELS)
       brightness_index = BRIGHTNESS_LEVELS - 1;
-    else if (brightness_index < 0)
-      brightness_index = BRIGHTNESS_LEVELS -1;
-    
     if(strncmp(temp_buf, "kbl ", 4) == 0)
     {
       strcpy(curr_kb_layout, temp_buf + 4);
@@ -501,10 +498,6 @@ void load_settings(void)
         if(curr_kb_layout[i] == '\r' || curr_kb_layout[i] == '\n')
           curr_kb_layout[i] = 0;
     }
-		if(strncmp(temp_buf, "Reversed UD ", 12) == 0)
-      dp_settings.frankenduck = atoi(temp_buf+12);
-		else
-			dp_settings.frankenduck = 0;
   }
   ggs_end:
   f_close(&sd_file);

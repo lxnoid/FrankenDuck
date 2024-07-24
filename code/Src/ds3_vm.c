@@ -34,7 +34,7 @@ my_stack arithmetic_stack, call_stack;
 void stack_init(my_stack* ms)
 {
   ms->top = 0;
-  memset(ms->stack, 0, sizeof(uint16_t) * STACK_SIZE);
+  memset(ms->stack, 0, STACK_SIZE);
 }
 
 uint8_t stack_push(my_stack* ms, uint16_t value)
@@ -219,21 +219,21 @@ char* make_str(uint16_t str_start_addr)
   // kb_print(read_buffer, defaultchardelay_value, charjitter_value);
 }
 
-uint16_t col_index, red, green, blue;
+uint16_t index, red, green, blue;
 void parse_color(uint8_t opcode, uint8_t keynum)
 {
   stack_pop(&arithmetic_stack, &blue);
   stack_pop(&arithmetic_stack, &green);
   stack_pop(&arithmetic_stack, &red);
-  stack_pop(&arithmetic_stack, &col_index);
+  stack_pop(&arithmetic_stack, &index);
 
-  if(col_index == 0)
-    col_index = keynum;
+  if(index == 0)
+    index = keynum;
   else
-    col_index--;
-  if(col_index >= MAPPABLE_KEY_COUNT)
+    index--;
+  if(index >= MAPPABLE_KEY_COUNT)
     return;
-  set_pixel_3color_update_buffer(col_index, red, green, blue);
+  set_pixel_3color_update_buffer(index, red, green, blue);
   neopixel_update();
 }
 
@@ -249,7 +249,7 @@ void parse_swcf(void)
 
 void parse_swcr(uint8_t keynum)
 {
-  uint16_t swcr_arg = 0;
+  uint16_t swcr_arg;
   stack_pop(&arithmetic_stack, &swcr_arg);
 
   if(swcr_arg == 0)
@@ -266,7 +266,7 @@ void parse_swcr(uint8_t keynum)
 
 void parse_olc(void)
 {
-  uint16_t xxx = 0, yyy = 0;
+  uint16_t xxx, yyy;
   stack_pop(&arithmetic_stack, &yyy);
   stack_pop(&arithmetic_stack, &xxx);
   if(xxx >= SSD1306_WIDTH || yyy >= SSD1306_HEIGHT)
